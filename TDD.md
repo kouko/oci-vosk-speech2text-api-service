@@ -83,6 +83,14 @@ DG.md
 	- 格式檢查（flake8/black）
 	- Docker 建置與推送
 	- zip 打包（程式碼、Dockerfile、Terraform 腳本）供 OCI 部署
+- 自動化部署流程：
+	- 當程式碼推送到 main 分支時自動觸發
+	- 建立部署用 zip 檔案（包含所有必要文件）
+	- 上傳到 GitHub Releases
+	- 可透過 URL 直接部署至 OCI Resource Manager：
+	  ```
+	  https://console.us-phoenix-1.oraclecloud.com/resourcemanager/stacks/create?region=home&zipUrl=https://github.com/YOUR_USERNAME/oci-vosk-speech2text-api-service/releases/download/v1/vosk-stt-api-deployment.zip
+	  ```
 
 
 ## 6. 例外處理

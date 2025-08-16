@@ -4,7 +4,13 @@ This project provides a deployable Vosk-based Speech-to-Text (STT) API service f
 
 ## Quick Deploy
 
-<!-- One-click deploy button will be added here -->
+For one-click deployment to OCI:
+1. Build the deployment package using GitHub Actions
+2. Download the generated zip file from GitHub Releases
+3. Upload to OCI Resource Manager:
+   ```
+   https://console.us-phoenix-1.oraclecloud.com/resourcemanager/stacks/create?region=home&zipUrl=https://github.com/YOUR_USERNAME/oci-vosk-speech2text-api-service/releases/download/v1/vosk-stt-api-deployment.zip
+   ```
 
 ## Project Structure
 - `api/` - Source code for the Vosk STT API service
