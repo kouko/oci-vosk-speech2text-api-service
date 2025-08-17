@@ -252,6 +252,30 @@ resource "oci_core_instance" "stt_api_instance" {
   }
 }
 
+# OCI Logging Configuration
+resource "oci_logging_log_group" "stt_log_group" {
+  compartment_id = var.compartment_id
+  display_name   = "vosk-stt-log-group"
+  description    = "Log group for Vosk STT API service"
+}
+
+resource "oci_logging_log" "stt_deployment_log" {
+  display_name       = "vosk-stt-deployment-log"
+  log_group_id       = oci_logging_log_group.stt_log_group.id
+  log_type           = "CUSTOM"
+  is_enabled         = true
+  retention_duration = 30
+  
+  configuration {
+    source {
+      category    = "APPLICATION"
+      resource    = oci_core_instance.stt_api_instance.id
+      service     = "compute"
+      source_type = "OCISERVICE"
+    }
+  }
+}
+
 # Output values
 output "instance_public_ip" {
   description = "Public IP address of the STT API instance"
@@ -304,5 +328,16 @@ output "deployment_info" {
     docs_url = "http://${oci_core_instance.stt_api_instance.public_ip}:8000/docs"
     ssh_command = "ssh opc@${oci_core_instance.stt_api_instance.public_ip}"
     logs_command = "sudo tail -f /var/log/vosk-stt-deployment.log"
+    console_connection = "OCI Console → Compute → Instances → ${oci_core_instance.stt_api_instance.display_name} → Console Connection"
+    oci_logs = "OCI Console → Observability & Management → Logging → Log Groups → ${oci_logging_log_group.stt_log_group.display_name}"
+  }
+}
+
+output "oci_console_links" {
+  description = "Links to OCI Console for monitoring"
+  value = {
+    instance_console = "https://cloud.oracle.com/compute/instances/${oci_core_instance.stt_api_instance.id}?region=${var.region}"
+    log_group = "https://cloud.oracle.com/logging/log-groups/${oci_logging_log_group.stt_log_group.id}?region=${var.region}"
+    logs = "https://cloud.oracle.com/logging/search?region=${var.region}&logGroupId=${oci_logging_log_group.stt_log_group.id}"
   }
 }

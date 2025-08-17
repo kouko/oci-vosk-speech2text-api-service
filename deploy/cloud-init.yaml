@@ -67,6 +67,7 @@ write_files:
       # Logging function
       log() {
           echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a /var/log/vosk-stt-deployment.log
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | logger -t vosk-stt-deployment
       }
       
       log "Starting Vosk STT API service deployment..."
@@ -131,8 +132,10 @@ runcmd:
   - mkdir -p /opt/vosk-stt
   - cd /opt/vosk-stt
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment script..." > /var/log/vosk-stt-deployment.log
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment script..." | logger -t vosk-stt-deployment
   - /opt/vosk-stt/build-and-run.sh
   - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init completed" >> /var/log/vosk-stt-deployment.log
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init completed" | logger -t vosk-stt-deployment
 
 final_message: |
   Vosk STT API service deployment completed!
