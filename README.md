@@ -10,10 +10,10 @@ This project provides a deployable Vosk-based Speech-to-Text (STT) API service f
 
 **Required Setup:**
 1. OCI Account (Free Tier supported! 🆓)
-2. SSH key pair for secure access  
+2. SSH key pair for secure access (**optional**, see below)
 3. Choose your secure API key (16+ characters)
 
-> **Note**: This project is designed for personal use with HTTP API. Suitable for development, learning, and testing purposes.
+> **Note**: SSH Public Key is now an optional field. If you provide a key, you can SSH into the deployed VM for maintenance and troubleshooting. If left blank, SSH login will be disabled and you can only manage the service via the OCI console and API endpoints.
 
 **Deployment Process:**
 1. 🖱️ Click the "Deploy to Oracle Cloud" button above
@@ -21,7 +21,7 @@ This project provides a deployable Vosk-based Speech-to-Text (STT) API service f
 3. 📋 Fill out the deployment form:
    - **Compartment**: Select your target compartment
    - **Availability Domain**: Choose any available AD
-   - **SSH Public Key**: Paste your public SSH key
+   - **SSH Public Key**: Paste your public SSH key (**optional**)
    - **API Key**: Enter a secure API key (16+ characters)
    - **Instance Shape**: Choose VM shape 
      - 🆓 **Free Tier**: A1.Flex (2 OCPU/8GB) or E2.1.Micro (1 OCPU/1GB)
@@ -37,6 +37,10 @@ This project provides a deployable Vosk-based Speech-to-Text (STT) API service f
 - ✅ STT API service running on port 8000
 - ✅ API documentation available at `/docs`
 - ✅ Complete usage instructions provided
+
+> **SSH Public Key Option:**
+> - **Provided**: You can SSH into the VM (`ssh opc@YOUR_INSTANCE_IP`) for advanced maintenance, log inspection, or manual updates.
+> - **Not Provided**: SSH login is disabled for security. All management must be done via the API and OCI console. If troubleshooting is needed, you may need to redeploy with SSH enabled.
 
 ### Manual Deployment Steps (Alternative)
 If you prefer manual deployment:
