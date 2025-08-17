@@ -10,24 +10,12 @@ informationalText: |
   languages and formats. Designed for OCI Free Tier deployment.
 
 variableGroups:
-  - title: "Hidden Variable Group"
-    visible: false
-    variables:
-      - tenancy_ocid
-      - region
-      - compute_image_strategy_enum
-      - network_configuration_strategy
-      - subnet_type
-      - vcn_display_name
-      - vcn_cidr_block
-      - subnet_display_name
-      - subnet_cidr_block
-
   - title: "基本配置"
     visible: true
     variables:
-      - compute_compartment_ocid
-      - network_compartment_ocid
+      - tenancy_ocid
+      - region
+      - compartment_id
       - availability_domain
       - api_key
 
@@ -58,138 +46,49 @@ variableGroups:
     variables:
       - ssh_authorized_keys
 
-  - title: "進階設定"
-    visible: false
-    variables:
-      - docker_image_name
-      - github_repo_url
-
 variables:
-  ######################################################
-  ##############      HIDDEN VARIABLES      ###########
-  ######################################################
-  
+  # Basic Configuration
   tenancy_ocid:
     type: string
-    title: Tenancy ID
-    description: The Oracle Cloud Identifier (OCID) for your tenancy
+    title: "Tenancy OCID"
+    description: "Oracle Cloud Identifier (OCID) for your tenancy"
     required: true
 
   region:
     type: oci:identity:region:name
-    title: Region
-    description: The region in which to create all resources
+    title: "區域"
+    description: "選擇部署的 OCI 區域"
     required: true
 
-  compute_image_strategy_enum:
-    type: map(any)
-    default:
-      PLATFORM_IMAGE: "Platform Image"
-      CUSTOM_IMAGE: "Custom Image"
-
-  network_strategy_enum:
-    type: map(any)
-    default:
-      CREATE_NEW_VCN: "Create New VCN and Subnet"
-      USE_EXISTING_VCN: "Use Existing VCN and Subnet"
-
-  ######################################################
-  ##############    SERVICE VARIABLES       ###########
-  ######################################################
-
-  api_key:
-    type: password
-    title: "API Key"
-    description: "Secure API key for the STT service (minimum 16 characters, alphanumeric and hyphens only)"
-    required: true
-    minLength: 16
-    maxLength: 128
-    pattern: "^[a-zA-Z0-9_-]+$"
-
-  ######################################################
-  ##############    COMPUTE VARIABLES       ###########
-  ######################################################
-
-  compute_compartment_ocid:
+  compartment_id:
     type: oci:identity:compartment:id
-    title: "Compute Compartment"
-    description: "The compartment in which to create compute resources. Ensure you have 'manage compute-family' permissions."
+    title: "區間"
+    description: "選擇用於部署資源的區間"
     required: true
-    default: compartment_ocid
-
-  network_compartment_ocid:
-    type: oci:identity:compartment:id
-    title: "Network Compartment"
-    description: "The compartment for network resources. Ensure you have 'manage virtual-network-family' permissions. Can be same as compute compartment."
-    required: true
-    default: compartment_ocid
 
   availability_domain:
     type: oci:identity:availabilitydomain:name
-    title: "Availability Domain"
-    description: "The availability domain for the compute instance"
+    title: "可用性網域"
+    description: "選擇部署的可用性網域"
     dependsOn:
       regionName: region
-      compartmentId: compute_compartment_ocid
+      compartmentId: compartment_id
     required: true
 
   api_key:
     type: password
-    title: "API Key"
-    description: "Secure API key for the STT service (minimum 16 characters, alphanumeric and hyphens only)"
+    title: "API 金鑰"
+    description: "語音轉文字服務的安全金鑰（至少16個字元）"
     required: true
     minLength: 16
     maxLength: 128
     pattern: "^[a-zA-Z0-9_-]+$"
 
-  ######################################################
-  ##############    NETWORK STRATEGY        ###########
-  ######################################################
-
-  network_strategy:
-    type: enum
-    title: "網路配置"
-    description: "選擇網路配置方式。如果遇到權限問題，請選擇「使用現有 VCN」"
-    enum:
-      - "Create New VCN and Subnet"
-      - "Use Existing VCN and Subnet"
-    required: true
-    default: "Create New VCN and Subnet"
-
-  vcn_id:
-    type: oci:core:vcn:id
-    title: "現有 VCN"
-    description: "選擇一個現有的 VCN（虛擬雲網路）"
-    dependsOn:
-      compartmentId: network_compartment_ocid
-    visible:
-      eq:
-        - network_strategy
-        - "Use Existing VCN and Subnet"
-    required: true
-
-  subnet_id:
-    type: oci:core:subnet:id
-    title: "現有子網路"
-    description: "選擇一個公共子網路（需要有網際網路閘道連接）"
-    dependsOn:
-      compartmentId: network_compartment_ocid
-      vcnId: vcn_id
-      hidePrivateSubnet: true
-    visible:
-      eq:
-        - network_strategy
-        - "Use Existing VCN and Subnet"
-    required: true
-
-  ######################################################
-  ##############    INSTANCE CONFIGURATION  ###########
-  ######################################################
-
+  # Machine Configuration
   vm_shape:
     type: enum
     title: "機器規格"
-    description: "選擇機器規格。免費方案建議：E2.1.Micro (1核心/1GB記憶體) 或 A1.Flex (最多4核心/24GB記憶體)"
+    description: "選擇機器規格。免費方案建議：E2.1.Micro (1核心/1GB) 或 A1.Flex (最多4核心/24GB)"
     required: true
     default: "VM.Standard.A1.Flex"
     enum:
@@ -208,40 +107,28 @@ variables:
     default: 2
     visible:
       or:
-        - eq:
-          - vm_shape
-          - "VM.Standard.E3.Flex"
-        - eq:
-          - vm_shape
-          - "VM.Standard.E4.Flex"
-        - eq:
-          - vm_shape
-          - "VM.Standard.A1.Flex"
+        - eq: [vm_shape, "VM.Standard.E3.Flex"]
+        - eq: [vm_shape, "VM.Standard.E4.Flex"]
+        - eq: [vm_shape, "VM.Standard.A1.Flex"]
 
   vm_memory_gb:
     type: integer
     title: "記憶體 (GB)"
-    description: "彈性機器規格的記憶體大小。免費方案 A1.Flex 最多 24GB，建議至少 6GB 用於語音轉文字服務"
+    description: "彈性機器規格的記憶體大小。免費方案 A1.Flex 最多 24GB，建議至少 6GB"
     minimum: 1
     maximum: 1024
     default: 8
     visible:
       or:
-        - eq:
-          - vm_shape
-          - "VM.Standard.E3.Flex"
-        - eq:
-          - vm_shape
-          - "VM.Standard.E4.Flex"
-        - eq:
-          - vm_shape
-          - "VM.Standard.A1.Flex"
+        - eq: [vm_shape, "VM.Standard.E3.Flex"]
+        - eq: [vm_shape, "VM.Standard.E4.Flex"]
+        - eq: [vm_shape, "VM.Standard.A1.Flex"]
 
   # Image Configuration
   compute_image_strategy:
     type: enum
-    title: "Image Strategy"
-    description: "Choose between Platform Images or Custom Images"
+    title: "映像類型"
+    description: "選擇使用平台映像或自訂映像"
     required: true
     default: "Platform Image"
     enum:
@@ -250,127 +137,89 @@ variables:
 
   operating_system:
     type: enum
-    title: "Operating System"
-    description: "Choose the operating system for Platform Images"
+    title: "作業系統"
+    description: "選擇作業系統"
     required: true
     default: "Oracle Linux"
     visible:
-      eq:
-        - compute_image_strategy
-        - "Platform Image"
+      eq: [compute_image_strategy, "Platform Image"]
     enum:
       - "Oracle Linux"
       - "Ubuntu"
-      - "CentOS"
 
   platform_image_ocid:
     type: oci:core:image:id
-    title: "Platform Image"
-    description: "Select a Platform Image based on the Operating System choice"
+    title: "平台映像"
+    description: "選擇平台映像"
     dependsOn:
       compartmentId: compartment_id
       operatingSystem: operating_system
     visible:
-      eq:
-        - compute_image_strategy
-        - "Platform Image"
+      eq: [compute_image_strategy, "Platform Image"]
     required: true
 
   custom_image_ocid:
     type: oci:core:image:id
-    title: "Custom Image"
-    description: "Select your custom image OCID (should be based on Oracle Linux 8+)"
+    title: "自訂映像"
+    description: "選擇自訂映像 OCID"
     dependsOn:
       compartmentId: compartment_id
     visible:
-      eq:
-        - compute_image_strategy
-        - "Custom Image"
+      eq: [compute_image_strategy, "Custom Image"]
     required: true
 
   # Network Configuration
-  create_vcn:
-    type: boolean
-    title: "Create New VCN"
-    description: "Create a new Virtual Cloud Network and subnet. If you encounter permission errors, try using an existing VCN instead."
-    default: true
+  network_strategy:
+    type: enum
+    title: "網路配置"
+    description: "選擇網路配置方式"
+    enum:
+      - "Create New VCN and Subnet"
+      - "Use Existing VCN and Subnet"
+    required: true
+    default: "Create New VCN and Subnet"
 
   vcn_id:
     type: oci:core:vcn:id
-    title: "Existing VCN"
-    description: "Select an existing VCN with internet access. This option avoids VCN creation permission requirements."
+    title: "現有 VCN"
+    description: "選擇現有的虛擬雲網路"
     dependsOn:
       compartmentId: compartment_id
     visible:
-      eq:
-        - create_vcn
-        - false
+      eq: [network_strategy, "Use Existing VCN and Subnet"]
     required: true
 
   subnet_id:
     type: oci:core:subnet:id
-    title: "Existing Public Subnet"
-    description: "Select an existing public subnet with internet gateway access for API accessibility."
+    title: "現有子網路"
+    description: "選擇現有的公共子網路"
     dependsOn:
       compartmentId: compartment_id
       vcnId: vcn_id
+      hidePrivateSubnet: true
     visible:
-      eq:
-        - create_vcn
-        - false
+      eq: [network_strategy, "Use Existing VCN and Subnet"]
     required: true
 
-  # Advanced Settings
-  region:
-    type: oci:identity:region:name
-    title: "Region"
-    description: "OCI region for deployment"
-    required: true
-
-  image_id:
-    type: string
-    title: "Custom Image ID"
-    description: "Custom OS image ID (leave empty for auto-detection)"
+  # SSH Access
+  ssh_authorized_keys:
+    type: oci:core:ssh:publickey
+    title: "SSH 公開金鑰"
+    description: "用於 SSH 連線的公開金鑰（可選）"
     required: false
-
-  docker_image_name:
-    type: string
-    title: "Docker Image Name"
-    description: "Docker image name for the STT API"
-    default: "vosk-stt-api:latest"
-    required: false
-
-  github_repo_url:
-    type: string
-    title: "GitHub Repository URL"
-    description: "GitHub repository URL for the project source code"
-    default: "https://github.com/kouko/oci-vosk-speech2text-api-service.git"
-    required: false
-
-  # Hidden enum definitions
-  compute_image_strategy_enum:
-    type: map
-    default:
-      PLATFORM_IMAGE: "Platform Image"
-      CUSTOM_IMAGE: "Custom Image"
 
 outputs:
   instance_public_ip:
-    title: "Instance Public IP"
-    description: "Public IP address of the deployed instance"
-    type: link
+    title: "執行個體公開 IP"
+    description: "部署的執行個體公開 IP 位址"
+    type: string
 
   api_url:
-    title: "API URL"
-    description: "URL to access the STT API"
-    type: link
+    title: "API 網址"
+    description: "語音轉文字 API 的存取網址"
+    type: string
 
-  api_docs_url:
-    title: "API Documentation"
-    description: "URL to access the API documentation"
-    type: link
-
-  deployment_info:
-    title: "Deployment Information"
-    description: "Complete deployment information and commands"
-    type: json
+  ssh_connection:
+    title: "SSH 連線指令"
+    description: "連線到執行個體的 SSH 指令"
+    type: string
