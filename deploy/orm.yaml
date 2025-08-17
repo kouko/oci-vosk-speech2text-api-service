@@ -52,8 +52,8 @@ variables:
   # Required Configuration
   compartment_id:
     type: oci:identity:compartment:id
-    title: "Compartment"
-    description: "The compartment where resources will be created"
+    title: "Target Compartment"
+    description: "Select the compartment where resources will be created. Ensure you have 'manage compute-family' and 'manage virtual-network-family' permissions in this compartment."
     required: true
 
   availability_domain:
