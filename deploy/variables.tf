@@ -1,10 +1,6 @@
 # Terraform variables for Vosk STT API service
 
-variable "region" {
-  description = "OCI region for deployment"
-  type = string
-  default = ""
-}
+# region is automatically provided by OCI Resource Manager
 
 variable "compartment_id" {
   description = "OCI compartment ID for compute resources"

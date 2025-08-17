@@ -9,23 +9,25 @@ terraform {
   }
 }
 
-# OCI Resource Manager automatically provides authentication
+# OCI Resource Manager automatically provides authentication and region
 provider "oci" {
-  region = var.region
+  # region is automatically provided by Resource Manager
+}
+
+# Get the latest Oracle Linux 8 image for the current region
+data "oci_core_images" "oracle_linux" {
+  compartment_id   = var.compartment_id
+  operating_system = "Oracle Linux"
+  operating_system_version = "8"
+  shape = var.vm_shape
+  sort_by = "TIMECREATED"
+  sort_order = "DESC"
 }
 
 # Locals for derived values
 locals {
-  # Simple image mapping - use specific working images
-  default_images = {
-    "VM.Standard.A1.Flex" = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaawojkr2uec3oxqh5bwp6u5bfpzk4ztrmnbsmqz7k5q4l6jsjymgfa"  # Oracle Linux 8 ARM
-    "VM.Standard.E2.1.Micro" = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaapzjo63g7zmql7lzdijm5bqtv5zjmwcmj4ambhhakqhy3sothdy3q"  # Oracle Linux 8 x86
-    "VM.Standard.E3.Flex" = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaapzjo63g7zmql7lzdijm5bqtv5zjmwcmj4ambhhakqhy3sothdy3q"    # Oracle Linux 8 x86
-    "VM.Standard.E4.Flex" = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaapzjo63g7zmql7lzdijm5bqtv5zjmwcmj4ambhhakqhy3sothdy3q"    # Oracle Linux 8 x86
-  }
-  
-  # Select image based on shape
-  selected_image_id = local.default_images[var.vm_shape]
+  # Select latest Oracle Linux 8 image for the shape
+  selected_image_id = data.oci_core_images.oracle_linux.images[0].id
   
   # Determine shape config
   is_flexible_shape = contains(["VM.Standard.A1.Flex", "VM.Standard.E3.Flex", "VM.Standard.E4.Flex"], var.vm_shape)
