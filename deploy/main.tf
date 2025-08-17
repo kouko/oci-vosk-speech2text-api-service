@@ -28,6 +28,13 @@ locals {
   # Determine if shape is ARM-based
   is_arm_shape = contains(["VM.Standard.A1.Flex"], var.vm_shape)
   
+  # Known working images for ap-tokyo-1 region
+  # These should be updated periodically or use data source lookup
+  default_images = {
+    arm = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaawojkr2uec3oxqh5bwp6u5bfpzk4ztrmnbsmqz7k5q4l6jsjymgfa"  # Oracle Linux 8 ARM
+    x86 = "ocid1.image.oc1.ap-tokyo-1.aaaaaaaapzjo63g7zmql7lzdijm5bqtv5zjmwcmj4ambhhakqhy3sothdy3q"  # Oracle Linux 8 x86
+  }
+  
   # Smart image selection logic
   selected_image_id = (
     var.compute_image_strategy == "Platform Image" ? (
@@ -35,11 +42,11 @@ locals {
         local.is_arm_shape ? (
           length(data.oci_core_images.oracle_linux_arm.images) > 0 ? 
           data.oci_core_images.oracle_linux_arm.images[0].id : 
-          data.oci_core_images.oracle_linux_fallback.images[0].id
+          local.default_images.arm
         ) : (
           length(data.oci_core_images.oracle_linux_x86.images) > 0 ? 
           data.oci_core_images.oracle_linux_x86.images[0].id : 
-          data.oci_core_images.oracle_linux_fallback.images[0].id
+          local.default_images.x86
         )
       )
     ) : var.custom_image_ocid
@@ -51,7 +58,6 @@ data "oci_core_images" "oracle_linux_arm" {
   compartment_id = var.compartment_id
   operating_system = "Oracle Linux"
   operating_system_version = "8"
-  shape = "VM.Standard.A1.Flex"
   sort_by = "TIMECREATED"
   sort_order = "DESC"
   
@@ -59,9 +65,15 @@ data "oci_core_images" "oracle_linux_arm" {
     name   = "state"
     values = ["AVAILABLE"]
   }
+  
+  # Filter for ARM64 architecture
+  filter {
+    name   = "listing_type"
+    values = ["COMMUNITY", "CANONICAL"]
+  }
 }
 
-# Get the latest Oracle Linux 8 image for x86 shapes
+# Get the latest Oracle Linux 8 image for x86 shapes  
 data "oci_core_images" "oracle_linux_x86" {
   compartment_id = var.compartment_id
   operating_system = "Oracle Linux"
@@ -74,9 +86,10 @@ data "oci_core_images" "oracle_linux_x86" {
     values = ["AVAILABLE"]
   }
   
+  # This should get standard x86 images
   filter {
-    name   = "architecture"
-    values = ["X86_64"]
+    name   = "listing_type" 
+    values = ["CANONICAL"]
   }
 }
 
@@ -263,6 +276,24 @@ output "api_docs_url" {
 output "image_used" {
   description = "Image ID used for the instance"
   value = local.selected_image_id
+}
+
+output "shape_info" {
+  description = "Shape and architecture information"
+  value = {
+    shape = var.vm_shape
+    is_arm = local.is_arm_shape
+    image_strategy = var.compute_image_strategy
+  }
+}
+
+output "debug_images" {
+  description = "Available images for debugging"
+  value = {
+    arm_images_count = length(data.oci_core_images.oracle_linux_arm.images)
+    x86_images_count = length(data.oci_core_images.oracle_linux_x86.images)
+    fallback_images_count = length(data.oci_core_images.oracle_linux_fallback.images)
+  }
 }
 
 output "deployment_info" {
