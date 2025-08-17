@@ -1,28 +1,37 @@
 title: "Vosk Speech-to-Text API Service"
-description: "Deploy a complete Vosk-based Speech-to-Text API service on OCI"
+description: "Deploy a complete Vosk-based Speech-to-Text API service on OCI Free Tier"
 schemaVersion: 1.1.0
 version: "20240817"
 locale: "en"
+
+informationalText: |
+  This template deploys a Vosk Speech-to-Text API service on Oracle Cloud Infrastructure.
+  The service provides RESTful endpoints for audio transcription with support for multiple
+  languages and formats. Designed for OCI Free Tier deployment.
 
 variableGroups:
   - title: "Hidden Variable Group"
     visible: false
     variables:
+      - tenancy_ocid
       - region
-      - image_id
       - compute_image_strategy_enum
+      - network_strategy_enum
 
   - title: "Required Configuration"
     visible: true
     variables:
-      - compartment_id
+      - compute_compartment_ocid
+      - network_compartment_ocid
       - availability_domain
       - api_key
 
-  - title: "SSH Access (Optional)"
+  - title: "Network Strategy"
     visible: true
     variables:
-      - ssh_authorized_keys
+      - network_strategy
+      - vcn_id
+      - subnet_id
 
   - title: "Instance Configuration"
     visible: true
@@ -34,41 +43,40 @@ variableGroups:
       - operating_system
       - platform_image_ocid
       - custom_image_ocid
-
-  - title: "Network Configuration"
-    visible: true
-    variables:
-      - create_vcn
-      - vcn_id
-      - subnet_id
-
-  - title: "Advanced Settings"
-    visible: false
-    variables:
-      - docker_image_name
-      - github_repo_url
+      - ssh_authorized_keys
 
 variables:
-  # Required Configuration
-  compartment_id:
-    type: oci:identity:compartment:id
-    title: "Target Compartment"
-    description: "Select the compartment where resources will be created. Ensure you have 'manage compute-family' and 'manage virtual-network-family' permissions in this compartment."
+  ######################################################
+  ##############      HIDDEN VARIABLES      ###########
+  ######################################################
+  
+  tenancy_ocid:
+    type: string
+    title: Tenancy ID
+    description: The Oracle Cloud Identifier (OCID) for your tenancy
     required: true
 
-  availability_domain:
-    type: oci:identity:availabilitydomain:name
-    title: "Availability Domain"
-    description: "The availability domain for the compute instance"
-    dependsOn:
-      compartmentId: compartment_id
+  region:
+    type: oci:identity:region:name
+    title: Region
+    description: The region in which to create all resources
     required: true
 
-  ssh_authorized_keys:
-    type: oci:core:ssh:publickey
-    title: "SSH Public Key (Optional)"
-    description: "Public SSH key for accessing the instance. Leave empty to disable SSH access."
-    required: false
+  compute_image_strategy_enum:
+    type: map(any)
+    default:
+      PLATFORM_IMAGE: "Platform Image"
+      CUSTOM_IMAGE: "Custom Image"
+
+  network_strategy_enum:
+    type: map(any)
+    default:
+      CREATE_NEW_VCN: "Create New VCN and Subnet"
+      USE_EXISTING_VCN: "Use Existing VCN and Subnet"
+
+  ######################################################
+  ##############    SERVICE VARIABLES       ###########
+  ######################################################
 
   api_key:
     type: password
@@ -78,6 +86,82 @@ variables:
     minLength: 16
     maxLength: 128
     pattern: "^[a-zA-Z0-9_-]+$"
+
+  ######################################################
+  ##############    COMPUTE VARIABLES       ###########
+  ######################################################
+
+  compute_compartment_ocid:
+    type: oci:identity:compartment:id
+    title: "Compute Compartment"
+    description: "The compartment in which to create compute resources. Ensure you have 'manage compute-family' permissions."
+    required: true
+    default: compartment_ocid
+
+  network_compartment_ocid:
+    type: oci:identity:compartment:id
+    title: "Network Compartment"
+    description: "The compartment for network resources. Ensure you have 'manage virtual-network-family' permissions. Can be same as compute compartment."
+    required: true
+    default: compartment_ocid
+
+  availability_domain:
+    type: oci:identity:availabilitydomain:name
+    title: "Availability Domain"
+    description: "The availability domain for the compute instance"
+    dependsOn:
+      regionName: region
+      compartmentId: compute_compartment_ocid
+    required: true
+
+  api_key:
+    type: password
+    title: "API Key"
+    description: "Secure API key for the STT service (minimum 16 characters, alphanumeric and hyphens only)"
+    required: true
+    minLength: 16
+    maxLength: 128
+    pattern: "^[a-zA-Z0-9_-]+$"
+
+  ######################################################
+  ##############    NETWORK STRATEGY        ###########
+  ######################################################
+
+  network_strategy:
+    type: enum
+    title: "Network Strategy"
+    description: "Create new VCN (requires network permissions) or use existing VCN (avoids permission issues)"
+    enum:
+      - "Create New VCN and Subnet"
+      - "Use Existing VCN and Subnet"
+    required: true
+    default: "Use Existing VCN and Subnet"
+
+  vcn_id:
+    type: oci:core:vcn:id
+    title: "Existing VCN"
+    description: "Select an existing VCN with internet access. This avoids VCN creation permission requirements."
+    dependsOn:
+      compartmentId: network_compartment_ocid
+    visible:
+      eq:
+        - network_strategy
+        - "Use Existing VCN and Subnet"
+    required: true
+
+  subnet_id:
+    type: oci:core:subnet:id
+    title: "Existing Public Subnet"
+    description: "Select an existing public subnet with internet gateway access for API accessibility."
+    dependsOn:
+      compartmentId: network_compartment_ocid
+      vcnId: vcn_id
+      hidePrivateSubnet: true
+    visible:
+      eq:
+        - network_strategy
+        - "Use Existing VCN and Subnet"
+    required: true
 
   # Instance Configuration
   vm_shape:
@@ -186,13 +270,13 @@ variables:
   create_vcn:
     type: boolean
     title: "Create New VCN"
-    description: "Create a new Virtual Cloud Network and subnet"
+    description: "Create a new Virtual Cloud Network and subnet. If you encounter permission errors, try using an existing VCN instead."
     default: true
 
   vcn_id:
     type: oci:core:vcn:id
     title: "Existing VCN"
-    description: "Select existing VCN (required if 'Create New VCN' is false)"
+    description: "Select an existing VCN with internet access. This option avoids VCN creation permission requirements."
     dependsOn:
       compartmentId: compartment_id
     visible:
@@ -203,8 +287,8 @@ variables:
 
   subnet_id:
     type: oci:core:subnet:id
-    title: "Existing Subnet"
-    description: "Select existing public subnet (required if 'Create New VCN' is false)"
+    title: "Existing Public Subnet"
+    description: "Select an existing public subnet with internet gateway access for API accessibility."
     dependsOn:
       compartmentId: compartment_id
       vcnId: vcn_id

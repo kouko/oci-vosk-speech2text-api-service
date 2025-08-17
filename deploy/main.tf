@@ -14,6 +14,26 @@ provider "oci" {
   region = var.region
 }
 
+# Locals for derived values
+locals {
+  # Derive create_vcn from network_strategy
+  create_vcn = var.network_strategy == "Create New VCN and Subnet"
+  
+  # Use network_compartment_id if provided, otherwise use compartment_id
+  network_compartment_id = var.network_compartment_id != "" ? var.network_compartment_id : var.compartment_id
+  
+  # Smart image selection logic
+  selected_image_id = (
+    var.compute_image_strategy == "Platform Image" ? (
+      var.platform_image_ocid != "" ? var.platform_image_ocid : (
+        length(data.oci_core_images.oracle_linux.images) > 0 ? 
+        data.oci_core_images.oracle_linux.images[0].id : 
+        data.oci_core_images.oracle_linux_fallback.images[0].id
+      )
+    ) : var.custom_image_ocid
+  )
+}
+
 # Get the latest Oracle Linux 8 image for the region
 data "oci_core_images" "oracle_linux" {
   compartment_id = var.compartment_id
@@ -56,19 +76,19 @@ locals {
   )
 }
 
-# Create VCN if not provided
+# Create VCN if network strategy requires it
 resource "oci_core_vcn" "stt_vcn" {
-  count = var.create_vcn ? 1 : 0
-  compartment_id = var.compartment_id
+  count = local.create_vcn ? 1 : 0
+  compartment_id = local.network_compartment_id
   display_name = "vosk-stt-vcn"
   cidr_blocks = ["10.0.0.0/16"]
   dns_label = "voskstt"
 }
 
-# Create subnet if not provided
+# Create subnet if network strategy requires it
 resource "oci_core_subnet" "stt_subnet" {
-  count = var.create_vcn ? 1 : 0
-  compartment_id = var.compartment_id
+  count = local.create_vcn ? 1 : 0
+  compartment_id = local.network_compartment_id
   vcn_id = oci_core_vcn.stt_vcn[0].id
   display_name = "vosk-stt-subnet"
   cidr_block = "10.0.1.0/24"
@@ -79,16 +99,16 @@ resource "oci_core_subnet" "stt_subnet" {
 
 # Internet Gateway
 resource "oci_core_internet_gateway" "stt_igw" {
-  count = var.create_vcn ? 1 : 0
-  compartment_id = var.compartment_id
+  count = local.create_vcn ? 1 : 0
+  compartment_id = local.network_compartment_id
   vcn_id = oci_core_vcn.stt_vcn[0].id
   display_name = "vosk-stt-igw"
 }
 
 # Route Table
 resource "oci_core_route_table" "stt_route_table" {
-  count = var.create_vcn ? 1 : 0
-  compartment_id = var.compartment_id
+  count = local.create_vcn ? 1 : 0
+  compartment_id = local.network_compartment_id
   vcn_id = oci_core_vcn.stt_vcn[0].id
   display_name = "vosk-stt-route-table"
   
@@ -100,9 +120,9 @@ resource "oci_core_route_table" "stt_route_table" {
 
 # Security list rules
 resource "oci_core_security_list" "stt_api_security_list" {
-  compartment_id = var.compartment_id
+  compartment_id = local.network_compartment_id
   display_name = "stt-api-security-list"
-  vcn_id = var.create_vcn ? oci_core_vcn.stt_vcn[0].id : var.vcn_id
+  vcn_id = local.create_vcn ? oci_core_vcn.stt_vcn[0].id : var.vcn_id
   
   egress_security_rules {
     protocol = "all"
@@ -182,7 +202,7 @@ resource "oci_core_instance" "stt_api_instance" {
   }
   
   create_vnic_details {
-    subnet_id = var.create_vcn ? oci_core_subnet.stt_subnet[0].id : var.subnet_id
+    subnet_id = local.create_vcn ? oci_core_subnet.stt_subnet[0].id : var.subnet_id
     assign_public_ip = true
     display_name = "vosk-stt-vnic"
   }

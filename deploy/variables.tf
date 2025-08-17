@@ -13,13 +13,29 @@ variable "region" {
 # - private_key_path
 
 variable "compartment_id" {
-  description = "OCI compartment ID"
+  description = "OCI compartment ID for compute resources"
   type = string
+}
+
+variable "network_compartment_id" {
+  description = "OCI compartment ID for network resources (can be same as compartment_id)"
+  type = string
+  default = ""
 }
 
 variable "availability_domain" {
   description = "Availability domain"
   type = string
+}
+
+variable "network_strategy" {
+  description = "Network strategy: create new or use existing VCN"
+  type = string
+  default = "Create New VCN and Subnet"
+  validation {
+    condition = contains(["Create New VCN and Subnet", "Use Existing VCN and Subnet"], var.network_strategy)
+    error_message = "Network strategy must be 'Create New VCN and Subnet' or 'Use Existing VCN and Subnet'."
+  }
 }
 
 variable "vm_shape" {
@@ -49,7 +65,7 @@ variable "vm_memory_gb" {
 }
 
 variable "create_vcn" {
-  description = "Create new VCN and subnet (true) or use existing (false)"
+  description = "Create new VCN and subnet (true) or use existing (false). Derived from network_strategy."
   type = bool
   default = true
 }
