@@ -16,6 +16,16 @@ provider "oci" {
   private_key_path = var.private_key_path
 }
 
+# Get the latest Oracle Linux 8 image for the region
+data "oci_core_images" "oracle_linux" {
+  compartment_id = var.compartment_id
+  operating_system = "Oracle Linux"
+  operating_system_version = "8"
+  shape = var.vm_shape
+  sort_by = "TIMECREATED"
+  sort_order = "DESC"
+}
+
 # Create VCN if not provided
 resource "oci_core_vcn" "stt_vcn" {
   count = var.create_vcn ? 1 : 0
@@ -121,6 +131,7 @@ locals {
   cloud_init = base64encode(templatefile("${path.module}/cloud-init.yaml", {
     api_key = var.api_key
     docker_image = var.docker_image_name
+    github_repo_url = var.github_repo_url
   }))
 }
 
@@ -148,7 +159,7 @@ resource "oci_core_instance" "stt_api_instance" {
   
   source_details {
     source_type = "image"
-    image_id = var.image_id
+    image_id = var.image_id != "" ? var.image_id : data.oci_core_images.oracle_linux.images[0].id
   }
   
   metadata = {
@@ -180,4 +191,20 @@ output "api_url" {
 output "api_docs_url" {
   description = "URL to access the API documentation"
   value = "http://${oci_core_instance.stt_api_instance.public_ip}:8000/docs"
+}
+
+output "image_used" {
+  description = "Image ID used for the instance"
+  value = var.image_id != "" ? var.image_id : data.oci_core_images.oracle_linux.images[0].id
+}
+
+output "deployment_info" {
+  description = "Deployment information and next steps"
+  value = {
+    instance_ip = oci_core_instance.stt_api_instance.public_ip
+    api_url = "http://${oci_core_instance.stt_api_instance.public_ip}:8000"
+    docs_url = "http://${oci_core_instance.stt_api_instance.public_ip}:8000/docs"
+    ssh_command = "ssh opc@${oci_core_instance.stt_api_instance.public_ip}"
+    logs_command = "sudo tail -f /var/log/vosk-stt-deployment.log"
+  }
 }

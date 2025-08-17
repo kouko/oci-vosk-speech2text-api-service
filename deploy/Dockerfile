@@ -93,7 +93,7 @@ echo "Models downloaded successfully"\n\
 ' > /app/download_models.sh && chmod +x /app/download_models.sh
 
 # Set environment variables
-ENV API_KEY=your-default-api-key-change-me
+ENV API_KEY=please-set-secure-api-key
 ENV MODELS_DIR=/app/models
 ENV INPUT_DIR=/app/data/input
 ENV OUTPUT_DIR=/app/data/output

@@ -1,7 +1,7 @@
 # Terraform variables for Vosk STT API service
 
 variable "region" {
-  description = "OCI region"
+  description = "OCI region for deployment"
   type = string
   default = "us-ashburn-1"
 }
@@ -37,21 +37,41 @@ variable "availability_domain" {
 }
 
 variable "vm_shape" {
-  description = "VM shape (e.g., VM.Standard.E2.Flex for flexible, VM.Standard.E2.1.Micro for free tier)"
+  description = "The shape of the compute instance. Free Tier: E2.1.Micro (1 OCPU/1GB) or A1.Flex (up to 4 OCPU/24GB)"
   type = string
-  default = "VM.Standard.E2.1.Micro"
+  default = "VM.Standard.A1.Flex"
 }
 
 variable "vm_ocpus" {
-  description = "Number of OCPUs for flexible shapes"
+  description = "Number of OCPUs for flexible shapes (1-8). Each OCPU supports 1-16 GB RAM."
   type = number
-  default = 1
+  default = 2
+  validation {
+    condition = var.vm_ocpus >= 1 && var.vm_ocpus <= 8
+    error_message = "OCPUs must be between 1 and 8."
+  }
 }
 
 variable "vm_memory_gb" {
-  description = "Memory in GB for flexible shapes"
+  description = "Memory in GB for flexible shapes (1-128). Recommend 6-8 GB for STT workloads."
   type = number
-  default = 6
+  default = 8
+  validation {
+    condition = var.vm_memory_gb >= 1 && var.vm_memory_gb <= 128
+    error_message = "Memory must be between 1 and 128 GB."
+  }
+  validation {
+    condition = var.vm_memory_gb <= var.vm_ocpus * 16
+    error_message = "Memory cannot exceed 16 GB per OCPU (current limit: ${var.vm_ocpus * 16} GB)."
+  }
+  validation {
+    condition = !(var.vm_shape == "VM.Standard.A1.Flex" && var.vm_ocpus > 4)
+    error_message = "A1.Flex Free Tier is limited to 4 OCPUs. Choose fewer OCPUs or upgrade to paid tier."
+  }
+  validation {
+    condition = !(var.vm_shape == "VM.Standard.A1.Flex" && var.vm_memory_gb > 24)
+    error_message = "A1.Flex Free Tier is limited to 24 GB RAM. Choose less memory or upgrade to paid tier."
+  }
 }
 
 variable "create_vcn" {
@@ -73,26 +93,38 @@ variable "vcn_id" {
 }
 
 variable "image_id" {
-  description = "Base image ID (Oracle Linux 8)"
+  description = "Base image ID (Oracle Linux 8). Leave empty to auto-detect latest image for the region."
   type = string
-  # Oracle Linux 8 image OCID for us-ashburn-1
-  default = "ocid1.image.oc1.iad.aaaaaaaa6tp7lhyrcokdtf7vrbmxyp2pctgg4uxvqere5gv2be6et62lx3q"
+  default = ""
 }
 
 variable "ssh_authorized_keys" {
-  description = "SSH authorized keys for instance access"
+  description = "SSH authorized keys for instance access (required)"
   type = string
+  validation {
+    condition = length(var.ssh_authorized_keys) > 0
+    error_message = "SSH authorized keys must be provided for secure access."
+  }
 }
 
 variable "api_key" {
-  description = "API key for the STT service"
+  description = "API key for the STT service (must be changed before deployment)"
   type = string
   sensitive = true
-  default = "please-change-this-api-key"
+  validation {
+    condition = var.api_key != "please-change-this-api-key" && length(var.api_key) >= 16
+    error_message = "API key must be changed from default and be at least 16 characters long."
+  }
 }
 
 variable "docker_image_name" {
   description = "Docker image name for the STT API"
   type = string
   default = "vosk-stt-api:latest"
+}
+
+variable "github_repo_url" {
+  description = "GitHub repository URL for the project"
+  type = string
+  default = "https://github.com/kouko/oci-vosk-speech2text-api-service.git"
 }
