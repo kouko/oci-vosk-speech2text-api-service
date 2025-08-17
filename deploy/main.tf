@@ -157,7 +157,7 @@ resource "oci_core_instance" "stt_api_instance" {
   
   source_details {
     source_type = "image"
-    image_id = var.image_id != "" ? var.image_id : data.oci_core_images.oracle_linux.images[0].id
+    source_id = var.image_id != "" ? var.image_id : data.oci_core_images.oracle_linux.images[0].id
   }
   
   metadata = {
