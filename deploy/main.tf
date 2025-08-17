@@ -74,6 +74,13 @@ resource "oci_core_security_list" "stt_security_list" {
   }
 
   # Inbound rules
+  # ICMP for ping
+  ingress_security_rules {
+    protocol = "1" # ICMP
+    source   = "0.0.0.0/0"
+  }
+
+  # SSH access
   ingress_security_rules {
     protocol = "6" # TCP
     source   = "0.0.0.0/0"
