@@ -25,24 +25,33 @@ locals {
   subnet_name = "vosk-stt-subnet"
   subnet_cidr = "10.0.1.0/24"
   
+  # Determine if shape is ARM-based
+  is_arm_shape = contains(["VM.Standard.A1.Flex"], var.vm_shape)
+  
   # Smart image selection logic
   selected_image_id = (
     var.compute_image_strategy == "Platform Image" ? (
       var.platform_image_ocid != "" ? var.platform_image_ocid : (
-        length(data.oci_core_images.oracle_linux.images) > 0 ? 
-        data.oci_core_images.oracle_linux.images[0].id : 
-        data.oci_core_images.oracle_linux_fallback.images[0].id
+        local.is_arm_shape ? (
+          length(data.oci_core_images.oracle_linux_arm.images) > 0 ? 
+          data.oci_core_images.oracle_linux_arm.images[0].id : 
+          data.oci_core_images.oracle_linux_fallback.images[0].id
+        ) : (
+          length(data.oci_core_images.oracle_linux_x86.images) > 0 ? 
+          data.oci_core_images.oracle_linux_x86.images[0].id : 
+          data.oci_core_images.oracle_linux_fallback.images[0].id
+        )
       )
     ) : var.custom_image_ocid
   )
 }
 
-# Get the latest Oracle Linux 8 image for the region
-data "oci_core_images" "oracle_linux" {
+# Get the latest Oracle Linux 8 image for ARM (A1.Flex) shapes
+data "oci_core_images" "oracle_linux_arm" {
   compartment_id = var.compartment_id
   operating_system = "Oracle Linux"
   operating_system_version = "8"
-  # Remove shape filter as it might be too restrictive
+  shape = "VM.Standard.A1.Flex"
   sort_by = "TIMECREATED"
   sort_order = "DESC"
   
@@ -52,7 +61,26 @@ data "oci_core_images" "oracle_linux" {
   }
 }
 
-# Backup: Get any Oracle Linux image if the above doesn't work
+# Get the latest Oracle Linux 8 image for x86 shapes
+data "oci_core_images" "oracle_linux_x86" {
+  compartment_id = var.compartment_id
+  operating_system = "Oracle Linux"
+  operating_system_version = "8"
+  sort_by = "TIMECREATED"
+  sort_order = "DESC"
+  
+  filter {
+    name   = "state"
+    values = ["AVAILABLE"]
+  }
+  
+  filter {
+    name   = "architecture"
+    values = ["X86_64"]
+  }
+}
+
+# Fallback: Get any Oracle Linux image
 data "oci_core_images" "oracle_linux_fallback" {
   compartment_id = var.compartment_id
   operating_system = "Oracle Linux"

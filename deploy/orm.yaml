@@ -95,7 +95,7 @@ variables:
     title: "機器規格"
     description: "選擇機器規格。免費方案建議：E2.1.Micro (1核心/1GB) 或 A1.Flex (最多4核心/24GB)"
     required: true
-    default: "VM.Standard.A1.Flex"
+    default: "VM.Standard.E2.1.Micro"
     enum:
       - "VM.Standard.E2.1.Micro"
       - "VM.Standard.A1.Flex" 

@@ -38,7 +38,7 @@ variable "network_strategy" {
 variable "vm_shape" {
   description = "The shape of the compute instance. Free Tier: E2.1.Micro (1 OCPU/1GB) or A1.Flex (up to 4 OCPU/24GB)"
   type = string
-  default = "VM.Standard.A1.Flex"
+  default = "VM.Standard.E2.1.Micro"
 }
 
 variable "vm_ocpus" {
