@@ -1,0 +1,69 @@
+name: Deploy to OCI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.9
+    
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pytest
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v
+    
+    - name: Build Docker image
+      run: |
+        docker build -t vosk-stt-api .
+    
+    - name: Create deployment zip
+      run: |
+        # Create deployment directory
+        mkdir -p deploy-package
+        
+        # Copy all necessary files
+        cp -r api deploy tests requirements.txt .github README.md DG.md PRD.md SAD.md TDD.md deploy-package/
+        
+        # Create zip file
+        cd deploy-package
+        zip -r vosk-stt-api-deployment.zip . -x "*.git*" "*__pycache__*" "*.pyc" "*/node_modules/*"
+        mv vosk-stt-api-deployment.zip ..
+        cd ..
+        rm -rf deploy-package
+    
+    - name: Upload to GitHub Releases
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./vosk-stt-api-deployment.zip
+        asset_name: vosk-stt-api-deployment.zip
+        asset_content_type: application/zip
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: Release ${{ github.run_number }}
+        body: Automated deployment package for OCI Resource Manager
+        draft: false
+        prerelease: false
