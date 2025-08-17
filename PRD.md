@@ -129,7 +129,7 @@
 			"models": {
 				"zh": ["small", "large"],
 				"en": ["small", "large"],
-				"ja": ["small"]
+				"ja": ["small", "large"]
 			}
 		}
 		```

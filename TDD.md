@@ -41,7 +41,6 @@ DG.md
 - utils.py：檔案處理、例外處理、通用工具。
 - tests/：各模組單元測試。
 
-
 ## 1. API 設計
 - 端點：
 	- `POST /transcribe`：上傳音檔/影片檔，指定語言與模型大小，回傳任務 ID。
@@ -61,7 +60,6 @@ DG.md
 - 前端定時輪詢 `/tasks/{id}` 查詢進度或結果。
 - 任務失敗時回傳 error 訊息。
 
-
 ## 3. 語音辨識流程
 - 支援音檔（wav/mp3）與影片檔案（mp4/mov），影片自動擷取音軌。
 - 語言與模型大小由 API 參數指定，預設 small。
@@ -70,12 +68,10 @@ DG.md
 	2. 呼叫 Vosk 模型辨識，取得文字與分段時間戳。
 	3. 依需求輸出純文字或 VTT 字幕（程式自動轉換）。
 
-
 ## 4. 安全性
 - 僅支援 API 金鑰驗證，於 Header 傳送，後端比對金鑰。
 - 不支援 JWT。
 - 支援 HTTP 與自簽憑證的 HTTPS，正式建議用 CA 憑證。
-
 
 ## 5. CI/CD
 - GitHub Actions 工作流：
@@ -92,13 +88,11 @@ DG.md
 	  https://console.us-phoenix-1.oraclecloud.com/resourcemanager/stacks/create?region=home&zipUrl=https://github.com/YOUR_USERNAME/oci-vosk-speech2text-api-service/releases/download/v1/vosk-stt-api-deployment.zip
 	  ```
 
-
 ## 6. 例外處理
 - 任務失敗：回傳 status=failed，error 欄位說明原因。
 - 檔案格式不支援：API 回傳錯誤訊息。
 - API 金鑰錯誤：回傳 401 Unauthorized。
 - 其他例外皆有明確回應格式。
-
 
 ## 1. 使用套件規劃
 
@@ -141,7 +135,7 @@ DG.md
   "input_file": "檔案路徑",
   "output_file": "字幕/文字檔路徑",
   "language": "en|zh|...",
-  "model_size": "small|medium|large",
+  "model_size": "small|large",
   "result": "辨識結果（純文字/VTT）",
   "error": "錯誤訊息（如有）",
   "created_at": "ISO8601時間戳",
@@ -149,7 +143,6 @@ DG.md
 }
 ```
 - 音檔/字幕檔案命名規則：`{task_id}_{type}.wav`、`{task_id}.vtt`，儲存於指定目錄（如 data/、output/）。
-
 
 ## 8. 例外/錯誤處理流程
 - API 回傳格式：
@@ -163,38 +156,31 @@ DG.md
 - 常見錯誤類型：檔案格式不支援、API 金鑰錯誤、模型載入失敗、任務不存在等。
 - 處理策略：明確 HTTP 狀態碼（400/401/404/500），error 欄位說明。
 
-
 ## 9. 模型/語言管理
 - 支援語言與模型大小查詢 API，回傳可用選項。
 - 模型檔案儲存於 models/，載入時依參數選擇。
 - 未來可支援多模型（如 Whisper），模組化設計。
 
-
 ## 10. 安全性細節
 - API 金鑰管理：金鑰存於 config/，可用腳本新增/撤銷。
 - HTTPS 憑證：自簽憑證產生流程、正式環境建議用 CA 憑證。
-
 
 ## 11. 測試規劃
 - 單元測試：API 路由、任務流程、金鑰驗證、例外處理。
 - 整合測試：音檔/影片上傳、字幕產生、任務輪詢。
 - 測試資料：提供範例音檔、影片檔、金鑰。
 
-
 ## 12. 部署細節
 - Docker/OCI 參數化設計：環境變數（API_KEY、MODEL_PATH、REDIS_URL等）可於部署時指定。
 - Terraform 變數說明：main.tf/variables.tf 內註解，README/DG 補充範例。
-
 
 ## 13. 日誌與監控
 - loguru 日誌格式：INFO/ERROR/DEBUG 等級，記錄 API 請求、任務狀態、例外。
 - 健康檢查 API：`GET /health`，回傳服務狀態。
 
-
 ## 14. 擴充性/維護性
 - 模組化設計原則：各功能獨立，易於擴充/維護。
 - 未來支援 Whisper 或其他 STT：stt.py 可抽象化，支援多模型切換。
-
 
 ## 15. API 詳細規格
 
@@ -203,7 +189,7 @@ DG.md
 - 請求參數：
   - file: 二進位音檔/影片檔 (multipart/form-data)
   - language: string（如 'en', 'zh'）
-  - model_size: string（'small'|'medium'|'large'，預設 small）
+  - model_size: string（'small'|'large'，預設 small）
   - x-api-key: string（Header）
 - 回應格式：
 ```json
@@ -237,7 +223,7 @@ DG.md
 ```json
 {
   "languages": ["en", "zh", ...],
-  "model_sizes": ["small", "medium", "large"]
+  "model_sizes": ["small", "large"]
 }
 ```
 - 錯誤碼：401、500
@@ -270,8 +256,7 @@ DG.md
 - 並發/鎖定策略：
   - 任務 JSON 檔案存取時採用檔案鎖（如 filelock 套件）避免競爭
   - 任務目錄可依 task_id 分散，減少 I/O 壓力
-- 若未來改用 Redis，則任務狀態可存於 Redis，檔案系統僅存檔案本身
-
+  - 若未來改用 Redis，則任務狀態可存於 Redis，檔案系統僅存檔案本身
 
 ## 17. 部署環境細節
 - Dockerfile 需明確設定 Python 版本、必要套件、環境變數（API_KEY、MODEL_PATH、REDIS_URL）。
@@ -286,25 +271,21 @@ DG.md
   - Disk：20GB 以上（視模型大小調整）
 - OCI Resource Manager Stack 部署時，控制台可直接選擇「Destroy」選項，系統自動執行 terraform destroy，將所有由該 Stack 建立的資源一鍵移除，無需額外撰寫清理腳本。
 
-
 ## 18. 模型下載/管理流程
 - Vosk 模型於服務啟動時自動下載（如 models/download.py 腳本），啟動前即確保所有必要模型已下載。
 - 若下載失敗，系統自動重試（建議最多重試 3 次，間隔 10 秒），仍失敗則標記模型不可用。
 - 若模型不可用，API 端點回傳 HTTP 500，error 欄位明確說明「模型下載失敗，無法提供服務」。
 - 管理員可於日誌檢查失敗原因並手動修復。
 
-
 ## 19. 安全性測試與金鑰管理
 - API 金鑰新增/撤銷流程：提供 scripts/add_key.py、remove_key.py。
 - 金鑰儲存格式：config/api_keys.json，內容加密或 hash。
 - 測試用金鑰：測試環境自動產生，正式環境手動設定。
 
-
 ## 20. 例外處理與日誌
 - 日誌輪替：loguru 支援自動分檔、保留天數設定。
 - 錯誤通知：可擴充 email/slack 通知（loguru callback）。
 - 異常自動重試：Celery 任務可設定重試次數與間隔。
-
 
 ## 21. CI/CD 詳細流程
 - .github/workflows/ci.yml：
@@ -315,23 +296,19 @@ DG.md
   - zip 打包（程式碼、Dockerfile、Terraform）
   - 可於 PRD/DG 補充一鍵部署教學
 
-
 ## 22. 前端/用戶端範例
 - 提供簡易前端（如 static/index.html）或 CLI 範例（scripts/client.py），示範 API 輪詢與檔案上傳。
 - README.md 補充使用教學。
 
-
 ## 23. 文件自動化
 - API 文件自動產生：FastAPI 內建 Swagger UI（/docs），或 OpenAPI JSON。
 - README/DG 補充一鍵部署教學、API 文件連結。
-
 
 ## 24. 版本管理與維護策略
 - 模型、API、部署腳本皆需版本號（如 models/version.txt、api/VERSION）。
 - 重大升級時於 DG/README 註明升級步驟。
 - 建議使用 git tag 管理版本。
 - 升級前先於本機測試新版本，確定功能正常、無重大 bug，再正式部署到 OCI。
-
 
 ## 25. API 限流設計
 - 採用 FastAPI 限流插件（如 slowapi）實現 rate limit。
