@@ -1,0 +1,120 @@
+#cloud-config
+# Cloud-init script for Vosk STT API service deployment
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - docker.io
+  - docker-compose
+  - git
+  - wget
+  - unzip
+
+groups:
+  - docker
+
+users:
+  - name: opc
+    groups: docker
+    shell: /bin/bash
+
+write_files:
+  - path: /opt/vosk-stt/docker-compose.yml
+    content: |
+      version: '3.8'
+      services:
+        vosk-stt-api:
+          image: ${docker_image}
+          container_name: vosk-stt-api
+          ports:
+            - "8000:8000"
+          environment:
+            - API_KEY=${api_key}
+            - MODELS_DIR=/app/models
+            - INPUT_DIR=/app/data/input
+            - OUTPUT_DIR=/app/data/output
+            - TASKS_DIR=/app/data/tasks
+            - CONFIG_DIR=/app/config
+            - BACKGROUND_TASK_ENABLED=true
+            - MAX_FILE_SIZE=100
+            - RATE_LIMIT_REQUESTS=3
+            - RATE_LIMIT_WINDOW=10
+          volumes:
+            - vosk_models:/app/models
+            - vosk_data:/app/data
+            - vosk_config:/app/config
+          restart: unless-stopped
+          healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+
+      volumes:
+        vosk_models:
+        vosk_data:
+        vosk_config:
+    owner: root:root
+    permissions: '0644'
+  
+  - path: /opt/vosk-stt/build-and-run.sh
+    content: |
+      #!/bin/bash
+      set -e
+      
+      echo "Starting Vosk STT API service deployment..."
+      
+      cd /opt/vosk-stt
+      
+      # If docker image doesn't exist, build it
+      if ! docker images ${docker_image} --format "table {{.Repository}}:{{.Tag}}" | grep -q "${docker_image}"; then
+          echo "Building Docker image..."
+          
+          # Clone the repository
+          if [ ! -d "oci-vosk-speech2text-api-service" ]; then
+              git clone ${github_repo_url}
+          fi
+          
+          cd oci-vosk-speech2text-api-service
+          
+          # Build the Docker image
+          docker build -f deploy/Dockerfile -t ${docker_image} .
+          
+          cd ..
+      fi
+      
+      # Start the service
+      echo "Starting Docker Compose services..."
+      docker-compose up -d
+      
+      # Wait for service to be ready
+      echo "Waiting for service to be ready..."
+      for i in {1..30}; do
+          if curl -f http://localhost:8000/health >/dev/null 2>&1; then
+              echo "Service is ready!"
+              break
+          fi
+          echo "Waiting... ($i/30)"
+          sleep 10
+      done
+      
+      echo "Vosk STT API service is running!"
+      echo "API URL: http://$(curl -s http://169.254.169.254/opc/v1/vnics/ | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["publicIp"])')8000"
+      echo "API Documentation: http://$(curl -s http://169.254.169.254/opc/v1/vnics/ | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["publicIp"])'):8000/docs"
+      echo "API Key: ${api_key}"
+    owner: root:root
+    permissions: '0755'
+
+runcmd:
+  - systemctl enable docker
+  - systemctl start docker
+  - mkdir -p /opt/vosk-stt
+  - cd /opt/vosk-stt
+  - /opt/vosk-stt/build-and-run.sh > /var/log/vosk-stt-deployment.log 2>&1
+
+final_message: |
+  Vosk STT API service deployment completed!
+  Check deployment logs: tail -f /var/log/vosk-stt-deployment.log
+  Service logs: docker logs vosk-stt-api

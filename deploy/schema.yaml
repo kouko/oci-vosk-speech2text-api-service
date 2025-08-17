@@ -1,0 +1,201 @@
+title: "Vosk Speech-to-Text API Service"
+description: "Deploy a complete Vosk-based Speech-to-Text API service on OCI"
+schemaVersion: 1.1.0
+version: "20240817"
+locale: "en"
+
+variableGroups:
+  - title: "Required Configuration"
+    visible: true
+    variables:
+      - compartment_id
+      - availability_domain
+      - ssh_authorized_keys
+      - api_key
+
+  - title: "Instance Configuration"
+    visible: true
+    variables:
+      - vm_shape
+      - vm_ocpus
+      - vm_memory_gb
+
+  - title: "Network Configuration"
+    visible: true
+    variables:
+      - create_vcn
+      - vcn_id
+      - subnet_id
+
+  - title: "Advanced Settings"
+    visible: false
+    variables:
+      - region
+      - image_id
+      - docker_image_name
+      - github_repo_url
+
+variables:
+  # Required Configuration
+  compartment_id:
+    type: oci:identity:compartment:id
+    title: "Compartment"
+    description: "The compartment where resources will be created"
+    required: true
+
+  availability_domain:
+    type: oci:identity:availabilitydomain:name
+    title: "Availability Domain"
+    description: "The availability domain for the compute instance"
+    dependsOn:
+      compartmentId: compartment_id
+    required: true
+
+  ssh_authorized_keys:
+    type: oci:core:ssh:publickey
+    title: "SSH Public Key"
+    description: "Public SSH key for accessing the instance"
+    required: true
+    additionalProps:
+      allowMultiple: true
+
+  api_key:
+    type: password
+    title: "API Key"
+    description: "Secure API key for the STT service (minimum 16 characters)"
+    required: true
+    minLength: 16
+    maxLength: 128
+    pattern: "^[a-zA-Z0-9_-]+$"
+
+  # Instance Configuration
+  vm_shape:
+    type: enum
+    title: "Instance Shape"
+    description: "Choose compute instance shape. Free Tier options: E2.1.Micro (1 OCPU/1GB) or A1.Flex (4 OCPU/24GB)."
+    required: true
+    default: "VM.Standard.A1.Flex"
+    enum:
+      - "VM.Standard.E2.1.Micro"
+      - "VM.Standard.A1.Flex" 
+      - "VM.Standard.E2.2"
+      - "VM.Standard.E3.Flex"
+      - "VM.Standard.E4.Flex"
+
+  vm_ocpus:
+    type: integer
+    title: "OCPUs"
+    description: "Number of OCPUs for flexible shapes. Free Tier A1.Flex: up to 4 OCPUs always free."
+    minimum: 1
+    maximum: 8
+    default: 2
+    visible:
+      and:
+        - or:
+          - eq:
+            - vm_shape
+            - "VM.Standard.E3.Flex"
+          - eq:
+            - vm_shape
+            - "VM.Standard.E4.Flex"
+          - eq:
+            - vm_shape
+            - "VM.Standard.A1.Flex"
+
+  vm_memory_gb:
+    type: integer
+    title: "Memory (GB)"
+    description: "Memory in GB for flexible shapes. Free Tier A1.Flex: up to 24 GB always free. Minimum 6 GB recommended for STT."
+    minimum: 1
+    maximum: 128
+    default: 8
+    visible:
+      and:
+        - or:
+          - eq:
+            - vm_shape
+            - "VM.Standard.E3.Flex"
+          - eq:
+            - vm_shape
+            - "VM.Standard.E4.Flex"
+          - eq:
+            - vm_shape
+            - "VM.Standard.A1.Flex"
+
+  # Network Configuration
+  create_vcn:
+    type: boolean
+    title: "Create New VCN"
+    description: "Create a new Virtual Cloud Network and subnet"
+    default: true
+
+  vcn_id:
+    type: oci:core:vcn:id
+    title: "Existing VCN"
+    description: "Select existing VCN (required if 'Create New VCN' is false)"
+    dependsOn:
+      compartmentId: compartment_id
+    visible:
+      not:
+        - create_vcn
+    required: false
+
+  subnet_id:
+    type: oci:core:subnet:id
+    title: "Existing Subnet"
+    description: "Select existing subnet (required if 'Create New VCN' is false)"
+    dependsOn:
+      compartmentId: compartment_id
+      vcnId: vcn_id
+    visible:
+      not:
+        - create_vcn
+    required: false
+
+  # Advanced Settings
+  region:
+    type: oci:identity:region:name
+    title: "Region"
+    description: "OCI region for deployment"
+    required: true
+
+  image_id:
+    type: string
+    title: "Custom Image ID"
+    description: "Custom OS image ID (leave empty for auto-detection)"
+    required: false
+
+  docker_image_name:
+    type: string
+    title: "Docker Image Name"
+    description: "Docker image name for the STT API"
+    default: "vosk-stt-api:latest"
+    required: false
+
+  github_repo_url:
+    type: string
+    title: "GitHub Repository URL"
+    description: "GitHub repository URL for the project source code"
+    default: "https://github.com/kouko/oci-vosk-speech2text-api-service.git"
+    required: false
+
+outputs:
+  instance_public_ip:
+    title: "Instance Public IP"
+    description: "Public IP address of the deployed instance"
+    type: link
+
+  api_url:
+    title: "API URL"
+    description: "URL to access the STT API"
+    type: link
+
+  api_docs_url:
+    title: "API Documentation"
+    description: "URL to access the API documentation"
+    type: link
+
+  deployment_info:
+    title: "Deployment Information"
+    description: "Complete deployment information and commands"
+    type: json
