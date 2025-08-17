@@ -25,7 +25,7 @@ write_files:
       version: '3.8'
       services:
         vosk-stt-api:
-          image: ${docker_image}
+          image: vosk-stt-api:latest
           container_name: vosk-stt-api
           ports:
             - "8000:8000"
@@ -75,24 +75,24 @@ write_files:
       cd /opt/vosk-stt
       
       # If docker image doesn't exist, build it
-      if ! docker images ${docker_image} --format "table {{.Repository}}:{{.Tag}}" | grep -q "${docker_image}"; then
+      if ! docker images vosk-stt-api:latest --format "table {{.Repository}}:{{.Tag}}" | grep -q "vosk-stt-api:latest"; then
           log "Building Docker image..."
           
           # Clone the repository
           if [ ! -d "oci-vosk-speech2text-api-service" ]; then
               log "Cloning repository..."
-              git clone ${github_repo_url} || { log "Failed to clone repository"; exit 1; }
+              git clone https://github.com/kouko/oci-vosk-speech2text-api-service.git || { log "Failed to clone repository"; exit 1; }
           fi
           
           cd oci-vosk-speech2text-api-service
           
           # Build the Docker image
-          log "Building Docker image ${docker_image}..."
-          docker build -f deploy/Dockerfile -t ${docker_image} . || { log "Failed to build Docker image"; exit 1; }
+          log "Building Docker image vosk-stt-api:latest..."
+          docker build -f deploy/Dockerfile -t vosk-stt-api:latest . || { log "Failed to build Docker image"; exit 1; }
           
           cd ..
       else
-          log "Docker image ${docker_image} already exists"
+          log "Docker image vosk-stt-api:latest already exists"
       fi
       
       # Start the service

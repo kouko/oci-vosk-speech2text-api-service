@@ -1,70 +1,31 @@
 title: "Vosk Speech-to-Text API Service"
-description: "Deploy a complete Vosk-based Speech-to-Text API service on OCI Free Tier"
+description: "Deploy a Vosk STT API service on OCI - Simple deployment for personal use"
 schemaVersion: 1.1.0
-version: "20240817"
+version: "20250817"
 locale: "en"
 
 informationalText: |
-  This template deploys a Vosk Speech-to-Text API service on Oracle Cloud Infrastructure.
-  The service provides RESTful endpoints for audio transcription with support for multiple
-  languages and formats. Designed for OCI Free Tier deployment.
+  一鍵部署 Vosk Speech-to-Text API 服務到 Oracle Cloud Infrastructure
+  支持 Free Tier，提供多語言語音轉文字功能
 
 variableGroups:
-  - title: "隱藏變數"
-    visible: false
-    variables:
-      - tenancy_ocid
-
   - title: "基本配置"
     visible: true
     variables:
-      - region
       - compartment_id
       - availability_domain
       - api_key
+      - ssh_authorized_keys
 
-  - title: "機器規格"
+  - title: "機器規格 (Free Tier)"
     visible: true
     variables:
       - vm_shape
       - vm_ocpus
       - vm_memory_gb
 
-  - title: "映像選擇"
-    visible: true
-    variables:
-      - compute_image_strategy
-      - operating_system
-      - platform_image_ocid
-      - custom_image_ocid
-
-  - title: "網路配置"
-    visible: true
-    variables:
-      - network_strategy
-      - vcn_id
-      - subnet_id
-
-  - title: "SSH 訪問 (可選)"
-    visible: true
-    variables:
-      - ssh_authorized_keys
-
 variables:
-  # Hidden variables (automatically provided by OCI Resource Manager)
-  tenancy_ocid:
-    type: string
-    title: "Tenancy OCID"
-    description: "Oracle Cloud Identifier (OCID) for your tenancy (automatically provided)"
-    required: false
-
   # Basic Configuration
-  region:
-    type: oci:identity:region:name
-    title: "區域"
-    description: "選擇部署的 OCI 區域"
-    required: true
-
   compartment_id:
     type: oci:identity:compartment:id
     title: "區間"
@@ -76,7 +37,6 @@ variables:
     title: "可用性網域"
     description: "選擇部署的可用性網域"
     dependsOn:
-      regionName: region
       compartmentId: compartment_id
     required: true
 
@@ -89,17 +49,22 @@ variables:
     maxLength: 128
     pattern: "^[a-zA-Z0-9_-]+$"
 
+  ssh_authorized_keys:
+    type: oci:core:ssh:publickey
+    title: "SSH 公鑰 (可選)"
+    description: "用於 SSH 連接的公鑰。留空將禁用 SSH 訪問。"
+    required: false
+
   # Machine Configuration
   vm_shape:
     type: enum
     title: "機器規格"
     description: "選擇機器規格。免費方案建議：E2.1.Micro (1核心/1GB) 或 A1.Flex (最多4核心/24GB)"
     required: true
-    default: "VM.Standard.E2.1.Micro"
+    default: "VM.Standard.A1.Flex"
     enum:
       - "VM.Standard.E2.1.Micro"
       - "VM.Standard.A1.Flex" 
-      - "VM.Standard.E2.2"
       - "VM.Standard.E3.Flex"
       - "VM.Standard.E4.Flex"
 
@@ -108,7 +73,7 @@ variables:
     title: "CPU 核心數"
     description: "彈性機器規格的 CPU 核心數。免費方案 A1.Flex 最多 4 核心"
     minimum: 1
-    maximum: 64
+    maximum: 8
     default: 2
     visible:
       or:
@@ -119,9 +84,9 @@ variables:
   vm_memory_gb:
     type: integer
     title: "記憶體 (GB)"
-    description: "彈性機器規格的記憶體大小。免費方案 A1.Flex 最多 24GB，建議至少 6GB"
-    minimum: 1
-    maximum: 1024
+    description: "彈性機器規格的記憶體大小。免費方案 A1.Flex 最多 24GB，建議至少 8GB"
+    minimum: 6
+    maximum: 24
     default: 8
     visible:
       or:
@@ -129,102 +94,9 @@ variables:
         - eq: [vm_shape, "VM.Standard.E4.Flex"]
         - eq: [vm_shape, "VM.Standard.A1.Flex"]
 
-  # Image Configuration
-  compute_image_strategy:
-    type: enum
-    title: "映像類型"
-    description: "選擇使用平台映像或自訂映像"
-    required: true
-    default: "Platform Image"
-    enum:
-      - "Platform Image"
-      - "Custom Image"
-
-  operating_system:
-    type: enum
-    title: "作業系統"
-    description: "選擇作業系統"
-    required: true
-    default: "Oracle Linux"
-    visible:
-      eq: [compute_image_strategy, "Platform Image"]
-    enum:
-      - "Oracle Linux"
-      - "Ubuntu"
-
-  platform_image_ocid:
-    type: oci:core:image:id
-    title: "平台映像"
-    description: "選擇平台映像"
-    dependsOn:
-      compartmentId: compartment_id
-      operatingSystem: operating_system
-    visible:
-      eq: [compute_image_strategy, "Platform Image"]
-    required: true
-
-  custom_image_ocid:
-    type: oci:core:image:id
-    title: "自訂映像"
-    description: "選擇自訂映像 OCID"
-    dependsOn:
-      compartmentId: compartment_id
-    visible:
-      eq: [compute_image_strategy, "Custom Image"]
-    required: true
-
-  # Network Configuration
-  network_strategy:
-    type: enum
-    title: "網路配置"
-    description: "建議選擇「使用現有 VCN」以避免權限問題。如果您是管理員且有 VCN 管理權限，可選擇「創建新 VCN」"
-    enum:
-      - "Use Existing VCN and Subnet"
-      - "Create New VCN and Subnet"
-    required: true
-    default: "Use Existing VCN and Subnet"
-
-  vcn_id:
-    type: oci:core:vcn:id
-    title: "現有 VCN"
-    description: "選擇現有的虛擬雲網路。如果沒有 VCN，請先在 OCI 控制台建立一個"
-    dependsOn:
-      compartmentId: compartment_id
-    visible:
-      eq: [network_strategy, "Use Existing VCN and Subnet"]
-    required: true
-
-  subnet_id:
-    type: oci:core:subnet:id
-    title: "現有子網路"
-    description: "選擇現有的公共子網路（需要有網際網路閘道連接）"
-    dependsOn:
-      compartmentId: compartment_id
-      vcnId: vcn_id
-      hidePrivateSubnet: true
-    visible:
-      eq: [network_strategy, "Use Existing VCN and Subnet"]
-    required: true
-
-  # SSH Access
-  ssh_authorized_keys:
-    type: oci:core:ssh:publickey
-    title: "SSH 公開金鑰"
-    description: "用於 SSH 連線的公開金鑰（可選）"
-    required: false
-
 outputs:
-  instance_public_ip:
-    title: "執行個體公開 IP"
-    description: "部署的執行個體公開 IP 位址"
-    type: string
-
-  api_url:
-    title: "API 網址"
-    description: "語音轉文字 API 的存取網址"
-    type: string
-
-  ssh_connection:
-    title: "SSH 連線指令"
-    description: "連線到執行個體的 SSH 指令"
-    type: string
+  deployment_info:
+    type: json
+    title: "部署資訊"
+    displayText: "部署完成後的服務資訊"
+    visible: true
