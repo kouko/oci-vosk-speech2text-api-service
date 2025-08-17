@@ -29,12 +29,16 @@ variable "availability_domain" {
 }
 
 variable "network_strategy" {
-  description = "Network strategy: create new or use existing VCN"
+  description = "Network strategy: create new, use existing, or create minimal VCN"
   type = string
-  default = "Create New VCN and Subnet"
+  default = "Create Minimal VCN and Subnet"
   validation {
-    condition = contains(["Create New VCN and Subnet", "Use Existing VCN and Subnet"], var.network_strategy)
-    error_message = "Network strategy must be 'Create New VCN and Subnet' or 'Use Existing VCN and Subnet'."
+    condition = contains([
+      "Create New VCN and Subnet", 
+      "Use Existing VCN and Subnet",
+      "Create Minimal VCN and Subnet"
+    ], var.network_strategy)
+    error_message = "Network strategy must be one of: 'Create New VCN and Subnet', 'Use Existing VCN and Subnet', or 'Create Minimal VCN and Subnet'."
   }
 }
 

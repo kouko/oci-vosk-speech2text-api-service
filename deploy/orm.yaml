@@ -130,17 +130,22 @@ variables:
   network_strategy:
     type: enum
     title: "Network Strategy"
-    description: "Create new VCN (requires network permissions) or use existing VCN (avoids permission issues)"
+    description: |
+      Choose your network deployment strategy:
+      • "Use Existing VCN" - Select if you have existing VCN (avoids permission issues)
+      • "Create New VCN" - Creates new VCN (requires network permissions)
+      • "Create Minimal VCN" - Creates minimal VCN for Free Tier (recommended for new accounts)
     enum:
-      - "Create New VCN and Subnet"
       - "Use Existing VCN and Subnet"
+      - "Create New VCN and Subnet"
+      - "Create Minimal VCN and Subnet"
     required: true
-    default: "Use Existing VCN and Subnet"
+    default: "Create Minimal VCN and Subnet"
 
   vcn_id:
     type: oci:core:vcn:id
     title: "Existing VCN"
-    description: "Select an existing VCN with internet access. This avoids VCN creation permission requirements."
+    description: "Select an existing VCN with internet access"
     dependsOn:
       compartmentId: network_compartment_ocid
     visible:
@@ -152,7 +157,7 @@ variables:
   subnet_id:
     type: oci:core:subnet:id
     title: "Existing Public Subnet"
-    description: "Select an existing public subnet with internet gateway access for API accessibility."
+    description: "Select an existing public subnet with internet gateway access"
     dependsOn:
       compartmentId: network_compartment_ocid
       vcnId: vcn_id
@@ -162,6 +167,30 @@ variables:
         - network_strategy
         - "Use Existing VCN and Subnet"
     required: true
+
+  ######################################################
+  ##############    PERMISSION HELP         ###########
+  ######################################################
+
+  permission_help_text:
+    type: string
+    title: "Permission Requirements"
+    description: |
+      Required IAM permissions by strategy:
+      
+      For "Use Existing VCN":
+      • manage instances in compartment
+      • use virtual-network-family in compartment
+      
+      For "Create New VCN" or "Create Minimal VCN":
+      • manage virtual-network-family in compartment
+      • manage instances in compartment
+      
+      If deployment fails with permission errors, contact your OCI administrator
+      or try a different network strategy.
+    visible: true
+    default: ""
+    required: false
 
   # Instance Configuration
   vm_shape:

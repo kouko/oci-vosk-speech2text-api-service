@@ -17,7 +17,13 @@ provider "oci" {
 # Locals for derived values
 locals {
   # Derive create_vcn from network_strategy
-  create_vcn = var.network_strategy == "Create New VCN and Subnet"
+  create_vcn = contains([
+    "Create New VCN and Subnet", 
+    "Create Minimal VCN and Subnet"
+  ], var.network_strategy)
+  
+  # Determine if this is a minimal VCN setup
+  is_minimal_vcn = var.network_strategy == "Create Minimal VCN and Subnet"
   
   # Use network_compartment_id if provided, otherwise use compartment_id
   network_compartment_id = var.network_compartment_id != "" ? var.network_compartment_id : var.compartment_id
@@ -80,9 +86,14 @@ locals {
 resource "oci_core_vcn" "stt_vcn" {
   count = local.create_vcn ? 1 : 0
   compartment_id = local.network_compartment_id
-  display_name = "vosk-stt-vcn"
-  cidr_blocks = ["10.0.0.0/16"]
-  dns_label = "voskstt"
+  display_name = local.is_minimal_vcn ? "vosk-stt-minimal-vcn" : "vosk-stt-vcn"
+  cidr_blocks = [local.is_minimal_vcn ? "10.1.0.0/16" : "10.0.0.0/16"]
+  dns_label = local.is_minimal_vcn ? "vosksttmin" : "voskstt"
+  
+  freeform_tags = local.is_minimal_vcn ? {
+    "Purpose" = "Vosk-STT-Minimal"
+    "FreeTier" = "true"
+  } : {}
 }
 
 # Create subnet if network strategy requires it
@@ -90,11 +101,17 @@ resource "oci_core_subnet" "stt_subnet" {
   count = local.create_vcn ? 1 : 0
   compartment_id = local.network_compartment_id
   vcn_id = oci_core_vcn.stt_vcn[0].id
-  display_name = "vosk-stt-subnet"
-  cidr_block = "10.0.1.0/24"
-  dns_label = "sttsubnet"
+  display_name = local.is_minimal_vcn ? "vosk-stt-minimal-subnet" : "vosk-stt-subnet"
+  cidr_block = local.is_minimal_vcn ? "10.1.1.0/24" : "10.0.1.0/24"
+  dns_label = local.is_minimal_vcn ? "sttsubmin" : "sttsubnet"
   route_table_id = oci_core_route_table.stt_route_table[0].id
   security_list_ids = [oci_core_security_list.stt_api_security_list.id]
+  
+  # For minimal VCN, add Free Tier tags
+  freeform_tags = local.is_minimal_vcn ? {
+    "Purpose" = "Vosk-STT-Minimal"
+    "FreeTier" = "true"
+  } : {}
 }
 
 # Internet Gateway
@@ -102,7 +119,12 @@ resource "oci_core_internet_gateway" "stt_igw" {
   count = local.create_vcn ? 1 : 0
   compartment_id = local.network_compartment_id
   vcn_id = oci_core_vcn.stt_vcn[0].id
-  display_name = "vosk-stt-igw"
+  display_name = local.is_minimal_vcn ? "vosk-stt-minimal-igw" : "vosk-stt-igw"
+  
+  freeform_tags = local.is_minimal_vcn ? {
+    "Purpose" = "Vosk-STT-Minimal"
+    "FreeTier" = "true"
+  } : {}
 }
 
 # Route Table
@@ -110,12 +132,17 @@ resource "oci_core_route_table" "stt_route_table" {
   count = local.create_vcn ? 1 : 0
   compartment_id = local.network_compartment_id
   vcn_id = oci_core_vcn.stt_vcn[0].id
-  display_name = "vosk-stt-route-table"
+  display_name = local.is_minimal_vcn ? "vosk-stt-minimal-rt" : "vosk-stt-route-table"
   
   route_rules {
     destination = "0.0.0.0/0"
     network_entity_id = oci_core_internet_gateway.stt_igw[0].id
   }
+  
+  freeform_tags = local.is_minimal_vcn ? {
+    "Purpose" = "Vosk-STT-Minimal"
+    "FreeTier" = "true"
+  } : {}
 }
 
 # Security list rules
