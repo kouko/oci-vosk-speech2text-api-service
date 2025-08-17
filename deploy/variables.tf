@@ -99,12 +99,9 @@ variable "image_id" {
 }
 
 variable "ssh_authorized_keys" {
-  description = "SSH authorized keys for instance access (required)"
+  description = "SSH authorized keys for instance access (optional, leave empty to disable SSH login)"
   type = string
-  validation {
-    condition = length(var.ssh_authorized_keys) > 0
-    error_message = "SSH authorized keys must be provided for secure access."
-  }
+  default = ""
 }
 
 variable "api_key" {

@@ -53,9 +53,9 @@ variables:
 
   ssh_authorized_keys:
     type: oci:core:ssh:publickey
-    title: "SSH Public Key"
-    description: "Public SSH key for accessing the instance"
-    required: true
+    title: "SSH Public Key (Optional)"
+    description: "Public SSH key for accessing the instance. Leave empty to disable SSH login."
+    required: false
     additionalProps:
       allowMultiple: true
 
