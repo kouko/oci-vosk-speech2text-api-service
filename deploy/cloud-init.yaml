@@ -64,46 +64,64 @@ write_files:
       #!/bin/bash
       set -e
       
-      echo "Starting Vosk STT API service deployment..."
+      # Logging function
+      log() {
+          echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a /var/log/vosk-stt-deployment.log
+      }
+      
+      log "Starting Vosk STT API service deployment..."
       
       cd /opt/vosk-stt
       
       # If docker image doesn't exist, build it
       if ! docker images ${docker_image} --format "table {{.Repository}}:{{.Tag}}" | grep -q "${docker_image}"; then
-          echo "Building Docker image..."
+          log "Building Docker image..."
           
           # Clone the repository
           if [ ! -d "oci-vosk-speech2text-api-service" ]; then
-              git clone ${github_repo_url}
+              log "Cloning repository..."
+              git clone ${github_repo_url} || { log "Failed to clone repository"; exit 1; }
           fi
           
           cd oci-vosk-speech2text-api-service
           
           # Build the Docker image
-          docker build -f deploy/Dockerfile -t ${docker_image} .
+          log "Building Docker image ${docker_image}..."
+          docker build -f deploy/Dockerfile -t ${docker_image} . || { log "Failed to build Docker image"; exit 1; }
           
           cd ..
+      else
+          log "Docker image ${docker_image} already exists"
       fi
       
       # Start the service
-      echo "Starting Docker Compose services..."
-      docker-compose up -d
+      log "Starting Docker Compose services..."
+      docker-compose up -d || { log "Failed to start Docker Compose"; exit 1; }
       
       # Wait for service to be ready
-      echo "Waiting for service to be ready..."
-      for i in {1..30}; do
+      log "Waiting for service to be ready..."
+      for i in {1..60}; do
           if curl -f http://localhost:8000/health >/dev/null 2>&1; then
-              echo "Service is ready!"
+              log "Service is ready!"
               break
           fi
-          echo "Waiting... ($i/30)"
+          log "Waiting for service... ($i/60)"
           sleep 10
+          if [ $i -eq 60 ]; then
+              log "Service failed to start within 10 minutes"
+              docker logs vosk-stt-api || true
+              exit 1
+          fi
       done
       
-      echo "Vosk STT API service is running!"
-      echo "API URL: http://$(curl -s http://169.254.169.254/opc/v1/vnics/ | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["publicIp"])')8000"
-      echo "API Documentation: http://$(curl -s http://169.254.169.254/opc/v1/vnics/ | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["publicIp"])'):8000/docs"
-      echo "API Key: ${api_key}"
+      # Get public IP
+      PUBLIC_IP=$(curl -s http://169.254.169.254/opc/v1/vnics/ | python3 -c 'import sys, json; print(json.load(sys.stdin)[0]["publicIp"])' 2>/dev/null || echo "unknown")
+      
+      log "Vosk STT API service is running!"
+      log "API URL: http://$PUBLIC_IP:8000"
+      log "API Documentation: http://$PUBLIC_IP:8000/docs"
+      log "Health Check: http://$PUBLIC_IP:8000/health"
+      log "Deployment completed successfully!"
     owner: root:root
     permissions: '0755'
 
@@ -112,7 +130,9 @@ runcmd:
   - systemctl start docker
   - mkdir -p /opt/vosk-stt
   - cd /opt/vosk-stt
-  - /opt/vosk-stt/build-and-run.sh > /var/log/vosk-stt-deployment.log 2>&1
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting deployment script..." > /var/log/vosk-stt-deployment.log
+  - /opt/vosk-stt/build-and-run.sh
+  - echo "[$(date '+%Y-%m-%d %H:%M:%S')] Cloud-init completed" >> /var/log/vosk-stt-deployment.log
 
 final_message: |
   Vosk STT API service deployment completed!

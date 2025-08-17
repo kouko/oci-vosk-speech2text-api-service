@@ -71,7 +71,7 @@ Vosk STT API 服務運行
 ```
 
 ### 5.2 OCI Resource Manager 整合架構
-- **schema.yaml**: 定義使用者介面表單和參數驗證
+- **orm.yaml**: 定義使用者介面表單和參數驗證
 - **main.tf**: 基礎設施資源定義（VCN、子網路、安全規則、計算實例）
 - **variables.tf**: 變數定義與限制（Free Tier 保護、OCPU/記憶體比例驗證）
 - **cloud-init.yaml**: 實例初始化腳本（Docker 安裝、容器啟動）
@@ -110,7 +110,7 @@ Python 環境設定 (actions/setup-python@v5)
     ↓ (測試通過)
 Docker 映像檔建構
     ↓
-部署包打包 (包含 schema.yaml, Terraform 檔案, 源碼)
+部署包打包 (包含 orm.yaml, Terraform 檔案, 源碼)
     ↓
 版本號碼生成 (基於時間戳記: vYYYYMMDD-HHMMSS)
     ↓

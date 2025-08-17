@@ -204,7 +204,7 @@
 
 #### 4.1.4 部署包結構
 自動化產生的 ZIP 檔案包含：
-- **schema.yaml**: OCI Resource Manager UI 定義檔案
+- **orm.yaml**: OCI Resource Manager UI 定義檔案
 - **main.tf**: Terraform 基礎設施程式碼
 - **variables.tf**: 變數定義與驗證規則
 - **cloud-init.yaml**: 實例初始化腳本

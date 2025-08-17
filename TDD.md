@@ -102,7 +102,7 @@ DG.md
 #### 部署包結構最佳化
 ```
 vosk-stt-api-deployment.zip
-├── schema.yaml              # OCI Resource Manager UI 定義
+├── orm.yaml                 # OCI Resource Manager UI 定義
 ├── main.tf                  # Terraform 基礎設施程式碼
 ├── variables.tf             # 變數定義與驗證
 ├── cloud-init.yaml          # 實例初始化腳本
@@ -114,7 +114,7 @@ vosk-stt-api-deployment.zip
 ```
 
 #### OCI Resource Manager 整合
-- **schema.yaml**: 定義友善的使用者介面表單
+- **orm.yaml**: 定義友善的使用者介面表單
 - **變數驗證**: Free Tier 額度保護、OCPU/記憶體比例檢查
 - **條件顯示**: 彈性實例形狀時才顯示 OCPU/記憶體設定
 - **智慧預設值**: A1.Flex (2 OCPU + 8 GB RAM) 最佳化 Free Tier 體驗
@@ -311,7 +311,7 @@ https://console.us-phoenix-1.oraclecloud.com/resourcemanager/stacks/create?regio
   README.md Deploy Button → OCI Console UI
 
 參數配置層:
-  schema.yaml → 友善表單界面 → 參數驗證
+  orm.yaml → 友善表單界面 → 參數驗證
 
 基礎設施層:
   Terraform → VCN/子網路/安全規則 → 計算實例

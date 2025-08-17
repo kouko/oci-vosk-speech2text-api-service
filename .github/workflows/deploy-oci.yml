@@ -44,8 +44,8 @@ jobs:
         # Copy all necessary files
         cp -r api deploy tests requirements.txt .github README.md DG.md PRD.md SAD.md TDD.md deploy-package/
         
-        # Ensure schema.yaml is in the correct location for OCI Resource Manager
-        cp deploy/schema.yaml deploy-package/
+        # Ensure orm.yaml is in the correct location for OCI Resource Manager
+        cp deploy/orm.yaml deploy-package/
         
         # Copy deployment documentation
         cp deploy/POST_DEPLOYMENT.md deploy-package/

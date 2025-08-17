@@ -5,13 +5,23 @@ version: "20240817"
 locale: "en"
 
 variableGroups:
+  - title: "Hidden Variable Group"
+    visible: false
+    variables:
+      - region
+      - image_id
+
   - title: "Required Configuration"
     visible: true
     variables:
       - compartment_id
       - availability_domain
-      - ssh_authorized_keys
       - api_key
+
+  - title: "SSH Access (Optional)"
+    visible: true
+    variables:
+      - ssh_authorized_keys
 
   - title: "Instance Configuration"
     visible: true
@@ -30,8 +40,6 @@ variableGroups:
   - title: "Advanced Settings"
     visible: false
     variables:
-      - region
-      - image_id
       - docker_image_name
       - github_repo_url
 
@@ -54,15 +62,13 @@ variables:
   ssh_authorized_keys:
     type: oci:core:ssh:publickey
     title: "SSH Public Key (Optional)"
-    description: "Public SSH key for accessing the instance. Leave empty to disable SSH login."
+    description: "Public SSH key for accessing the instance. Leave empty to disable SSH access."
     required: false
-    additionalProps:
-      allowMultiple: true
 
   api_key:
     type: password
     title: "API Key"
-    description: "Secure API key for the STT service (minimum 16 characters)"
+    description: "Secure API key for the STT service (minimum 16 characters, alphanumeric and hyphens only)"
     required: true
     minLength: 16
     maxLength: 128
@@ -87,40 +93,38 @@ variables:
     title: "OCPUs"
     description: "Number of OCPUs for flexible shapes. Free Tier A1.Flex: up to 4 OCPUs always free."
     minimum: 1
-    maximum: 8
+    maximum: 64
     default: 2
     visible:
-      and:
-        - or:
-          - eq:
-            - vm_shape
-            - "VM.Standard.E3.Flex"
-          - eq:
-            - vm_shape
-            - "VM.Standard.E4.Flex"
-          - eq:
-            - vm_shape
-            - "VM.Standard.A1.Flex"
+      or:
+        - eq:
+          - vm_shape
+          - "VM.Standard.E3.Flex"
+        - eq:
+          - vm_shape
+          - "VM.Standard.E4.Flex"
+        - eq:
+          - vm_shape
+          - "VM.Standard.A1.Flex"
 
   vm_memory_gb:
     type: integer
     title: "Memory (GB)"
     description: "Memory in GB for flexible shapes. Free Tier A1.Flex: up to 24 GB always free. Minimum 6 GB recommended for STT."
     minimum: 1
-    maximum: 128
+    maximum: 1024
     default: 8
     visible:
-      and:
-        - or:
-          - eq:
-            - vm_shape
-            - "VM.Standard.E3.Flex"
-          - eq:
-            - vm_shape
-            - "VM.Standard.E4.Flex"
-          - eq:
-            - vm_shape
-            - "VM.Standard.A1.Flex"
+      or:
+        - eq:
+          - vm_shape
+          - "VM.Standard.E3.Flex"
+        - eq:
+          - vm_shape
+          - "VM.Standard.E4.Flex"
+        - eq:
+          - vm_shape
+          - "VM.Standard.A1.Flex"
 
   # Network Configuration
   create_vcn:
@@ -136,21 +140,23 @@ variables:
     dependsOn:
       compartmentId: compartment_id
     visible:
-      not:
+      eq:
         - create_vcn
-    required: false
+        - false
+    required: true
 
   subnet_id:
     type: oci:core:subnet:id
     title: "Existing Subnet"
-    description: "Select existing subnet (required if 'Create New VCN' is false)"
+    description: "Select existing public subnet (required if 'Create New VCN' is false)"
     dependsOn:
       compartmentId: compartment_id
       vcnId: vcn_id
     visible:
-      not:
+      eq:
         - create_vcn
-    required: false
+        - false
+    required: true
 
   # Advanced Settings
   region:
