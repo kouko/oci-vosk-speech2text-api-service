@@ -6,25 +6,11 @@ variable "region" {
   default = "us-ashburn-1"
 }
 
-variable "tenancy_ocid" {
-  description = "OCI tenancy OCID"
-  type = string
-}
-
-variable "user_ocid" {
-  description = "OCI user OCID"
-  type = string
-}
-
-variable "fingerprint" {
-  description = "OCI user fingerprint"
-  type = string
-}
-
-variable "private_key_path" {
-  description = "Path to OCI user private key"
-  type = string
-}
+# The following authentication variables are automatically provided by OCI Resource Manager:
+# - tenancy_ocid
+# - user_ocid  
+# - fingerprint
+# - private_key_path
 
 variable "compartment_id" {
   description = "OCI compartment ID"
@@ -43,34 +29,22 @@ variable "vm_shape" {
 }
 
 variable "vm_ocpus" {
-  description = "Number of OCPUs for flexible shapes (1-8). Each OCPU supports 1-16 GB RAM."
+  description = "Number of OCPUs for flexible shapes. Free Tier A1.Flex supports up to 4 OCPUs."
   type = number
   default = 2
   validation {
-    condition = var.vm_ocpus >= 1 && var.vm_ocpus <= 8
-    error_message = "OCPUs must be between 1 and 8."
+    condition = var.vm_ocpus >= 1 && var.vm_ocpus <= 64
+    error_message = "OCPUs must be between 1 and 64. Note: Free Tier A1.Flex allows up to 4 OCPUs."
   }
 }
 
 variable "vm_memory_gb" {
-  description = "Memory in GB for flexible shapes (1-128). Recommend 6-8 GB for STT workloads."
+  description = "Memory in GB for flexible shapes. Free Tier A1.Flex supports up to 24 GB. Minimum 6 GB recommended for STT workloads."
   type = number
   default = 8
   validation {
-    condition = var.vm_memory_gb >= 1 && var.vm_memory_gb <= 128
-    error_message = "Memory must be between 1 and 128 GB."
-  }
-  validation {
-    condition = var.vm_memory_gb <= var.vm_ocpus * 16
-    error_message = "Memory cannot exceed 16 GB per OCPU (current limit: ${var.vm_ocpus * 16} GB)."
-  }
-  validation {
-    condition = !(var.vm_shape == "VM.Standard.A1.Flex" && var.vm_ocpus > 4)
-    error_message = "A1.Flex Free Tier is limited to 4 OCPUs. Choose fewer OCPUs or upgrade to paid tier."
-  }
-  validation {
-    condition = !(var.vm_shape == "VM.Standard.A1.Flex" && var.vm_memory_gb > 24)
-    error_message = "A1.Flex Free Tier is limited to 24 GB RAM. Choose less memory or upgrade to paid tier."
+    condition = var.vm_memory_gb >= 1 && var.vm_memory_gb <= 1024
+    error_message = "Memory must be between 1 and 1024 GB. Note: Free Tier A1.Flex allows up to 24 GB, minimum 6 GB recommended for STT."
   }
 }
 

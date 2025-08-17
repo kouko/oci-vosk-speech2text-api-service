@@ -113,7 +113,7 @@ graph TD
 
 ```
 vosk-stt-api-deployment.zip
-├── schema.yaml              # OCI UI 表單定義
+├── orm.yaml                 # OCI UI 表單定義
 ├── main.tf                  # Terraform 基礎設施程式碼
 ├── variables.tf             # 變數定義與驗證
 ├── cloud-init.yaml          # 實例初始化腳本
