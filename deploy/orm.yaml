@@ -1,7 +1,7 @@
 title: "Vosk Speech-to-Text API Service"
 description: "Deploy a Vosk STT API service on OCI - Simple deployment for personal use"
 schemaVersion: 1.1.0
-version: "20250817"
+version: "20250817-simplified"
 locale: "en"
 
 informationalText: |
