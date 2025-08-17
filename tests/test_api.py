@@ -4,14 +4,16 @@ API tests for Vosk STT service
 import pytest
 import os
 import tempfile
-from starlette.testclient import TestClient
-from api.main import app
 
-client = TestClient(app)
-
-# Test API key for testing
+# Set API key BEFORE importing any app modules
 TEST_API_KEY = "test-api-key-123"
 os.environ["API_KEY"] = TEST_API_KEY
+
+# Import app after setting environment variables
+from api.main import app
+from starlette.testclient import TestClient
+
+client = TestClient(app)
 
 def get_test_headers():
     """Get headers with test API key"""
@@ -34,8 +36,9 @@ def test_get_models_with_api_key():
     data = response.json()
     assert data["status"] == "success"
     assert data["error"] is None
-    assert "languages" in data
-    assert "models" in data
+    assert "data" in data
+    assert "languages" in data["data"]
+    assert "model_sizes" in data["data"]
 
 def test_get_models_with_bearer_token():
     """Test models endpoint with Bearer token"""
