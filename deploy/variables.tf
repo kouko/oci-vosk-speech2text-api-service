@@ -70,21 +70,3 @@ variable "vm_memory_gb" {
     error_message = "Memory must be between 6 and 24 GB. Free Tier A1.Flex allows up to 24 GB."
   }
 }
-
-# Free Tier validation
-locals {
-  is_a1_flex = var.vm_shape == "VM.Standard.A1.Flex"
-  free_tier_violation = local.is_a1_flex && (var.vm_ocpus > 4 || var.vm_memory_gb > 24)
-}
-
-# Validation for Free Tier limits
-variable "validate_free_tier" {
-  description = "Internal variable for Free Tier validation"
-  type = bool
-  default = true
-  
-  validation {
-    condition = !local.free_tier_violation
-    error_message = "Free Tier A1.Flex limits: max 4 OCPUs and 24 GB memory. Current config exceeds limits."
-  }
-}
