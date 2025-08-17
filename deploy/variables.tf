@@ -17,12 +17,6 @@ variable "compartment_id" {
   type = string
 }
 
-variable "network_compartment_id" {
-  description = "OCI compartment ID for network resources (can be same as compartment_id)"
-  type = string
-  default = ""
-}
-
 variable "availability_domain" {
   description = "Availability domain"
   type = string
@@ -39,42 +33,6 @@ variable "network_strategy" {
     ], var.network_strategy)
     error_message = "Network strategy must be 'Create New VCN and Subnet' or 'Use Existing VCN and Subnet'."
   }
-}
-
-variable "network_configuration_strategy" {
-  description = "Network configuration strategy when creating new VCN (internal use)"
-  type = string
-  default = "Use Recommended Configuration"
-}
-
-variable "subnet_type" {
-  description = "Type of subnet (internal use)"
-  type = string
-  default = "Public Subnet"
-}
-
-variable "vcn_display_name" {
-  description = "Display name for the VCN (internal use)"
-  type = string
-  default = "vosk-stt-vcn"
-}
-
-variable "vcn_cidr_block" {
-  description = "CIDR block for the VCN (internal use)"
-  type = string
-  default = "10.0.0.0/16"
-}
-
-variable "subnet_display_name" {
-  description = "Display name for the subnet (internal use)"
-  type = string
-  default = "vosk-stt-subnet"
-}
-
-variable "subnet_cidr_block" {
-  description = "CIDR block for the subnet (internal use)"
-  type = string
-  default = "10.0.1.0/24"
 }
 
 variable "vm_shape" {
@@ -121,12 +79,6 @@ variable "vcn_id" {
   default = ""
 }
 
-variable "image_id" {
-  description = "Base image ID (Oracle Linux 8). Leave empty to auto-detect latest image for the region."
-  type = string
-  default = ""
-}
-
 variable "compute_image_strategy" {
   description = "Choose between Platform Image or Custom Image"
   type = string
@@ -149,14 +101,6 @@ variable "custom_image_ocid" {
   description = "Custom image OCID (should be based on Oracle Linux 8+)"
   type = string
   default = ""
-}
-
-variable "compute_image_strategy_enum" {
-  type = map(any)
-  default = {
-    PLATFORM_IMAGE = "Platform Image"
-    CUSTOM_IMAGE   = "Custom Image"
-  }
 }
 
 variable "ssh_authorized_keys" {
