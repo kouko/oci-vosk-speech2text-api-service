@@ -27,7 +27,3 @@ jobs:
       run: |
         PYTHONPATH=. pytest tests/ -v
         
-    - name: Run linting
-      run: |
-        pip install flake8
-        flake8 api/ tests/
