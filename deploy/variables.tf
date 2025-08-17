@@ -29,17 +29,63 @@ variable "availability_domain" {
 }
 
 variable "network_strategy" {
-  description = "Network strategy: create new, use existing, or create minimal VCN"
+  description = "Network strategy: create new or use existing VCN"
   type = string
-  default = "Create Minimal VCN and Subnet"
+  default = "Create New VCN and Subnet"
   validation {
     condition = contains([
       "Create New VCN and Subnet", 
-      "Use Existing VCN and Subnet",
-      "Create Minimal VCN and Subnet"
+      "Use Existing VCN and Subnet"
     ], var.network_strategy)
-    error_message = "Network strategy must be one of: 'Create New VCN and Subnet', 'Use Existing VCN and Subnet', or 'Create Minimal VCN and Subnet'."
+    error_message = "Network strategy must be 'Create New VCN and Subnet' or 'Use Existing VCN and Subnet'."
   }
+}
+
+variable "network_configuration_strategy" {
+  description = "Network configuration strategy when creating new VCN"
+  type = string
+  default = "Use Recommended Configuration"
+  validation {
+    condition = contains([
+      "Use Recommended Configuration",
+      "Customize Network Configuration"
+    ], var.network_configuration_strategy)
+    error_message = "Network configuration strategy must be 'Use Recommended Configuration' or 'Customize Network Configuration'."
+  }
+}
+
+variable "subnet_type" {
+  description = "Type of subnet to create or filter existing subnets"
+  type = string
+  default = "Public Subnet"
+  validation {
+    condition = contains(["Public Subnet", "Private Subnet"], var.subnet_type)
+    error_message = "Subnet type must be 'Public Subnet' or 'Private Subnet'."
+  }
+}
+
+variable "vcn_display_name" {
+  description = "Display name for the VCN"
+  type = string
+  default = "vosk-stt-vcn"
+}
+
+variable "vcn_cidr_block" {
+  description = "CIDR block for the VCN"
+  type = string
+  default = "10.0.0.0/16"
+}
+
+variable "subnet_display_name" {
+  description = "Display name for the subnet"
+  type = string
+  default = "vosk-stt-subnet"
+}
+
+variable "subnet_cidr_block" {
+  description = "CIDR block for the subnet"
+  type = string
+  default = "10.0.1.0/24"
 }
 
 variable "vm_shape" {

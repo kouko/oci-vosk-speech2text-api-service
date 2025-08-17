@@ -130,22 +130,31 @@ variables:
   network_strategy:
     type: enum
     title: "Network Strategy"
-    description: |
-      Choose your network deployment strategy:
-      • "Use Existing VCN" - Select if you have existing VCN (avoids permission issues)
-      • "Create New VCN" - Creates new VCN (requires network permissions)
-      • "Create Minimal VCN" - Creates minimal VCN for Free Tier (recommended for new accounts)
+    description: "Create or use existing Network Stack (VCN and Subnet)"
     enum:
-      - "Use Existing VCN and Subnet"
       - "Create New VCN and Subnet"
-      - "Create Minimal VCN and Subnet"
+      - "Use Existing VCN and Subnet"
     required: true
-    default: "Create Minimal VCN and Subnet"
+    default: "Create New VCN and Subnet"
+
+  network_configuration_strategy:
+    type: enum
+    title: "Configuration Strategy"
+    description: "Use recommended configuration or customize it"
+    enum:
+      - "Use Recommended Configuration"
+      - "Customize Network Configuration"
+    required: true
+    default: "Use Recommended Configuration"
+    visible:
+      eq:
+        - network_strategy
+        - "Create New VCN and Subnet"
 
   vcn_id:
     type: oci:core:vcn:id
     title: "Existing VCN"
-    description: "Select an existing VCN with internet access"
+    description: "An existing Virtual Cloud Network (VCN) in which to create the compute instance"
     dependsOn:
       compartmentId: network_compartment_ocid
     visible:
@@ -154,19 +163,102 @@ variables:
         - "Use Existing VCN and Subnet"
     required: true
 
+  vcn_display_name:
+    type: string
+    title: "VCN Name"
+    description: "The name of the new Virtual Cloud Network (VCN)"
+    default: "vosk-stt-vcn"
+    required: true
+    visible:
+      and:
+        - eq:
+          - network_strategy
+          - "Create New VCN and Subnet"
+        - eq:
+          - network_configuration_strategy
+          - "Customize Network Configuration"
+
+  vcn_cidr_block:
+    type: string
+    title: "VCN CIDR Block"
+    description: "The CIDR of the new Virtual Cloud Network (VCN)"
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    default: "10.0.0.0/16"
+    required: true
+    visible:
+      and:
+        - eq:
+          - network_strategy
+          - "Create New VCN and Subnet"
+        - eq:
+          - network_configuration_strategy
+          - "Customize Network Configuration"
+
+  subnet_type:
+    type: enum
+    title: "Subnet Type"
+    description: "Choose between private and public subnets"
+    enum:
+      - "Private Subnet"
+      - "Public Subnet"
+    required: true
+    default: "Public Subnet"
+    visible:
+      eq:
+        - network_strategy
+        - "Create New VCN and Subnet"
+
   subnet_id:
     type: oci:core:subnet:id
-    title: "Existing Public Subnet"
-    description: "Select an existing public subnet with internet gateway access"
+    title: "Existing Subnet"
+    description: "An existing subnet. This subnet must already be present in the chosen VCN."
     dependsOn:
       compartmentId: network_compartment_ocid
       vcnId: vcn_id
-      hidePrivateSubnet: true
+      hidePublicSubnet:
+        eq:
+          - subnet_type
+          - "Private Subnet"
+      hidePrivateSubnet:
+        eq:
+          - subnet_type
+          - "Public Subnet"
     visible:
       eq:
         - network_strategy
         - "Use Existing VCN and Subnet"
     required: true
+
+  subnet_display_name:
+    type: string
+    title: "Subnet Name"
+    description: "The name of the new subnet"
+    default: "vosk-stt-subnet"
+    required: true
+    visible:
+      and:
+        - eq:
+          - network_strategy
+          - "Create New VCN and Subnet"
+        - eq:
+          - network_configuration_strategy
+          - "Customize Network Configuration"
+
+  subnet_cidr_block:
+    type: string
+    title: "Subnet CIDR Block"
+    description: "The CIDR of the new subnet. The new subnet's CIDR should not overlap with any other subnet CIDRs."
+    pattern: "^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\\/(3[0-2]|[1-2]?[0-9])$"
+    default: "10.0.1.0/24"
+    required: true
+    visible:
+      and:
+        - eq:
+          - network_strategy
+          - "Create New VCN and Subnet"
+        - eq:
+          - network_configuration_strategy
+          - "Customize Network Configuration"
 
   ######################################################
   ##############    PERMISSION HELP         ###########
