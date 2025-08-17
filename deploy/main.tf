@@ -19,9 +19,41 @@ data "oci_core_images" "oracle_linux" {
   compartment_id = var.compartment_id
   operating_system = "Oracle Linux"
   operating_system_version = "8"
-  shape = var.vm_shape
+  # Remove shape filter as it might be too restrictive
   sort_by = "TIMECREATED"
   sort_order = "DESC"
+  
+  filter {
+    name   = "state"
+    values = ["AVAILABLE"]
+  }
+}
+
+# Backup: Get any Oracle Linux image if the above doesn't work
+data "oci_core_images" "oracle_linux_fallback" {
+  compartment_id = var.compartment_id
+  operating_system = "Oracle Linux"
+  sort_by = "TIMECREATED"
+  sort_order = "DESC"
+  
+  filter {
+    name   = "state"
+    values = ["AVAILABLE"]
+  }
+}
+
+# Image selection logic
+locals {
+  # Choose image based on strategy and availability
+  selected_image_id = var.image_id != "" ? var.image_id : (
+    var.compute_image_strategy == var.compute_image_strategy_enum["PLATFORM_IMAGE"] ? (
+      var.platform_image_ocid != "" ? var.platform_image_ocid : (
+        length(data.oci_core_images.oracle_linux.images) > 0 ? 
+        data.oci_core_images.oracle_linux.images[0].id : 
+        data.oci_core_images.oracle_linux_fallback.images[0].id
+      )
+    ) : var.custom_image_ocid
+  )
 }
 
 # Create VCN if not provided
@@ -157,7 +189,7 @@ resource "oci_core_instance" "stt_api_instance" {
   
   source_details {
     source_type = "image"
-    source_id = var.image_id != "" ? var.image_id : data.oci_core_images.oracle_linux.images[0].id
+    source_id = local.selected_image_id
   }
   
   metadata = {
@@ -193,7 +225,7 @@ output "api_docs_url" {
 
 output "image_used" {
   description = "Image ID used for the instance"
-  value = var.image_id != "" ? var.image_id : data.oci_core_images.oracle_linux.images[0].id
+  value = local.selected_image_id
 }
 
 output "deployment_info" {

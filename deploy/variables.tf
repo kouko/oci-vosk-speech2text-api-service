@@ -72,6 +72,38 @@ variable "image_id" {
   default = ""
 }
 
+variable "compute_image_strategy" {
+  description = "Choose between Platform Image or Custom Image"
+  type = string
+  default = "Platform Image"
+}
+
+variable "operating_system" {
+  description = "Operating system for Platform Images"
+  type = string
+  default = "Oracle Linux"
+}
+
+variable "platform_image_ocid" {
+  description = "Platform image OCID for selected operating system"
+  type = string
+  default = ""
+}
+
+variable "custom_image_ocid" {
+  description = "Custom image OCID (should be based on Oracle Linux 8+)"
+  type = string
+  default = ""
+}
+
+variable "compute_image_strategy_enum" {
+  type = map(any)
+  default = {
+    PLATFORM_IMAGE = "Platform Image"
+    CUSTOM_IMAGE   = "Custom Image"
+  }
+}
+
 variable "ssh_authorized_keys" {
   description = "SSH authorized keys for instance access (optional, leave empty to disable SSH login)"
   type = string

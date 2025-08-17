@@ -10,6 +10,7 @@ variableGroups:
     variables:
       - region
       - image_id
+      - compute_image_strategy_enum
 
   - title: "Required Configuration"
     visible: true
@@ -29,6 +30,10 @@ variableGroups:
       - vm_shape
       - vm_ocpus
       - vm_memory_gb
+      - compute_image_strategy
+      - operating_system
+      - platform_image_ocid
+      - custom_image_ocid
 
   - title: "Network Configuration"
     visible: true
@@ -126,6 +131,57 @@ variables:
           - vm_shape
           - "VM.Standard.A1.Flex"
 
+  # Image Configuration
+  compute_image_strategy:
+    type: enum
+    title: "Image Strategy"
+    description: "Choose between Platform Images or Custom Images"
+    required: true
+    default: "Platform Image"
+    enum:
+      - "Platform Image"
+      - "Custom Image"
+
+  operating_system:
+    type: enum
+    title: "Operating System"
+    description: "Choose the operating system for Platform Images"
+    required: true
+    default: "Oracle Linux"
+    visible:
+      eq:
+        - compute_image_strategy
+        - "Platform Image"
+    enum:
+      - "Oracle Linux"
+      - "Ubuntu"
+      - "CentOS"
+
+  platform_image_ocid:
+    type: oci:core:image:id
+    title: "Platform Image"
+    description: "Select a Platform Image based on the Operating System choice"
+    dependsOn:
+      compartmentId: compartment_id
+      operatingSystem: operating_system
+    visible:
+      eq:
+        - compute_image_strategy
+        - "Platform Image"
+    required: true
+
+  custom_image_ocid:
+    type: oci:core:image:id
+    title: "Custom Image"
+    description: "Select your custom image OCID (should be based on Oracle Linux 8+)"
+    dependsOn:
+      compartmentId: compartment_id
+    visible:
+      eq:
+        - compute_image_strategy
+        - "Custom Image"
+    required: true
+
   # Network Configuration
   create_vcn:
     type: boolean
@@ -184,6 +240,13 @@ variables:
     description: "GitHub repository URL for the project source code"
     default: "https://github.com/kouko/oci-vosk-speech2text-api-service.git"
     required: false
+
+  # Hidden enum definitions
+  compute_image_strategy_enum:
+    type: map
+    default:
+      PLATFORM_IMAGE: "Platform Image"
+      CUSTOM_IMAGE: "Custom Image"
 
 outputs:
   instance_public_ip:
