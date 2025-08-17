@@ -42,48 +42,37 @@ variable "network_strategy" {
 }
 
 variable "network_configuration_strategy" {
-  description = "Network configuration strategy when creating new VCN"
+  description = "Network configuration strategy when creating new VCN (internal use)"
   type = string
   default = "Use Recommended Configuration"
-  validation {
-    condition = contains([
-      "Use Recommended Configuration",
-      "Customize Network Configuration"
-    ], var.network_configuration_strategy)
-    error_message = "Network configuration strategy must be 'Use Recommended Configuration' or 'Customize Network Configuration'."
-  }
 }
 
 variable "subnet_type" {
-  description = "Type of subnet to create or filter existing subnets"
+  description = "Type of subnet (internal use)"
   type = string
   default = "Public Subnet"
-  validation {
-    condition = contains(["Public Subnet", "Private Subnet"], var.subnet_type)
-    error_message = "Subnet type must be 'Public Subnet' or 'Private Subnet'."
-  }
 }
 
 variable "vcn_display_name" {
-  description = "Display name for the VCN"
+  description = "Display name for the VCN (internal use)"
   type = string
   default = "vosk-stt-vcn"
 }
 
 variable "vcn_cidr_block" {
-  description = "CIDR block for the VCN"
+  description = "CIDR block for the VCN (internal use)"
   type = string
   default = "10.0.0.0/16"
 }
 
 variable "subnet_display_name" {
-  description = "Display name for the subnet"
+  description = "Display name for the subnet (internal use)"
   type = string
   default = "vosk-stt-subnet"
 }
 
 variable "subnet_cidr_block" {
-  description = "CIDR block for the subnet"
+  description = "CIDR block for the subnet (internal use)"
   type = string
   default = "10.0.1.0/24"
 }
