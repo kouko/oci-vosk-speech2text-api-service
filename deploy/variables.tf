@@ -1,16 +1,16 @@
 # Terraform variables for Vosk STT API service
 
+# The following authentication variables are automatically provided by OCI Resource Manager:
+variable "tenancy_ocid" {
+  description = "OCI tenancy OCID (automatically provided by Resource Manager)"
+  type = string
+  default = ""
+}
+
 variable "region" {
   description = "OCI region for deployment"
   type = string
-  default = "us-ashburn-1"
 }
-
-# The following authentication variables are automatically provided by OCI Resource Manager:
-# - tenancy_ocid
-# - user_ocid  
-# - fingerprint
-# - private_key_path
 
 variable "compartment_id" {
   description = "OCI compartment ID for compute resources"
@@ -25,7 +25,7 @@ variable "availability_domain" {
 variable "network_strategy" {
   description = "Network strategy: create new or use existing VCN"
   type = string
-  default = "Create New VCN and Subnet"
+  default = "Use Existing VCN and Subnet"
   validation {
     condition = contains([
       "Create New VCN and Subnet", 

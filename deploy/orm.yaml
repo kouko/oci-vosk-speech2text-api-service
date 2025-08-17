@@ -10,10 +10,14 @@ informationalText: |
   languages and formats. Designed for OCI Free Tier deployment.
 
 variableGroups:
+  - title: "隱藏變數"
+    visible: false
+    variables:
+      - tenancy_ocid
+
   - title: "基本配置"
     visible: true
     variables:
-      - tenancy_ocid
       - region
       - compartment_id
       - availability_domain
@@ -47,13 +51,14 @@ variableGroups:
       - ssh_authorized_keys
 
 variables:
-  # Basic Configuration
+  # Hidden variables (automatically provided by OCI Resource Manager)
   tenancy_ocid:
     type: string
     title: "Tenancy OCID"
-    description: "Oracle Cloud Identifier (OCID) for your tenancy"
-    required: true
+    description: "Oracle Cloud Identifier (OCID) for your tenancy (automatically provided)"
+    required: false
 
+  # Basic Configuration
   region:
     type: oci:identity:region:name
     title: "區域"
@@ -172,17 +177,17 @@ variables:
   network_strategy:
     type: enum
     title: "網路配置"
-    description: "選擇網路配置方式"
+    description: "建議選擇「使用現有 VCN」以避免權限問題。如果您是管理員且有 VCN 管理權限，可選擇「創建新 VCN」"
     enum:
-      - "Create New VCN and Subnet"
       - "Use Existing VCN and Subnet"
+      - "Create New VCN and Subnet"
     required: true
-    default: "Create New VCN and Subnet"
+    default: "Use Existing VCN and Subnet"
 
   vcn_id:
     type: oci:core:vcn:id
     title: "現有 VCN"
-    description: "選擇現有的虛擬雲網路"
+    description: "選擇現有的虛擬雲網路。如果沒有 VCN，請先在 OCI 控制台建立一個"
     dependsOn:
       compartmentId: compartment_id
     visible:
@@ -192,7 +197,7 @@ variables:
   subnet_id:
     type: oci:core:subnet:id
     title: "現有子網路"
-    description: "選擇現有的公共子網路"
+    description: "選擇現有的公共子網路（需要有網際網路閘道連接）"
     dependsOn:
       compartmentId: compartment_id
       vcnId: vcn_id
